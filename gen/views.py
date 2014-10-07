@@ -1,6 +1,16 @@
 from gen import gen_app, models, db
-from flask import render_template, flash, redirect
+from flask import render_template, flash, redirect, request, url_for
 from .forms import AddGenotype
+from werkzeug import secure_filename
+import os, csv
+
+"""
+			Helper Functions
+"""
+
+def allowed_file(filename):
+	return '.' in filename and \
+			filename.rsplit('.', 1)[1] in gen_app.config['ALLOWED_EXTENSIONS']
 
 @gen_app.route('/')
 def index():
@@ -55,4 +65,26 @@ def import_data():
 
 	return render_template('import.html', title=title, rows=phenos, form=form)
 
+@gen_app.route('/upload_template', methods=['GET', 'POST'])
+def upload_template():
+	if request.method == 'POST':
+
+		file = request.files['template']
+		if file and allowed_file(file.filename):
+			filename = secure_filename(file.filename)
+			file.save(os.path.join(gen_app.config['UPLOAD_FOLDER'],filename))
+
+			with open(gen_app.config['UPLOAD_FOLDER'] + '/' + filename, 'rb') as csvfile:
+				sr = csv.reader(csvfile, delimiter=',')
+				for row in sr:
+					individual = models.Individual()
+
+					individual.individual_id = row[1]
+					individual.father_id = row[2]
+					individual.mother_id = row[3]
+					individual.gender = row[4]
+					db.session.add(individual)
+			db.session.commit()
+			return redirect(url_for('index'))
+		return "hello"
 

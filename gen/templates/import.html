@@ -1,10 +1,10 @@
 {% extends "layout.html" %}
 {% block body %}
 <div class="well">
-<form role="form">
+<form role="form" action="{{url_for('upload_template')}}" method=post enctype=multipart/form-data>
     <div class="form-group">
     <label for="exampleInputFile">DNA Samples</label>
-    <input type="file" id="exampleInputFile">
+    <input type="file" id="exampleInputFile" name="template">
     <p class="help-block">Accepted file formats: .csv.</p>
   </div>
 	<button type="submit" class="btn btn-primary"><i class="fa fa-upload"></i> Upload</button>
