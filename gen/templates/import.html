@@ -1,5 +1,77 @@
 {% extends "layout.html" %}
-
 {% block body %}
+<div class="well">
+<form role="form">
+    <div class="form-group">
+    <label for="exampleInputFile">DNA Samples</label>
+    <input type="file" id="exampleInputFile">
+    <p class="help-block">Accepted file formats: .csv.</p>
+  </div>
+	<button type="submit" class="btn btn-primary"><i class="fa fa-upload"></i> Upload</button>
+</form>
+</div>
+<div class="well">
+<form role="form">
+    <div class="form-group">
+    <label for="exampleInputFile">Phenotype Sample Data</label>
+    <input type="file" id="exampleInputFile">
+    <p class="help-block">Accepted file formats: .csv.</p>
+  </div>
+	<button type="submit" class="btn btn-primary"><i class="fa fa-upload"></i> Upload</button>
+</form>
+</div>
+<div class="well">
+<form role="form">
+    <div class="form-group">
+    <label for="exampleInputFile">Genotype Data</label>
+    <input type="file" id="exampleInputFile">
+    <p class="help-block">Accepted file formats: .csv.</p>
+  </div>
+	<button type="submit" class="btn btn-primary"><i class="fa fa-upload"></i> Upload</button>
+</form>
+</div>
+<div class="well">
+	<h3>Add Single Genotype</h3>
+<form class="form-inline" role="form" action="" method="post">
+	{{form.hidden_tag()}}
+  <div class="form-group">
+    <label class="sr-only" for="exampleInputEmail2">Email address</label>
+		{{form.individual_id(type="text", class_="form-control", id="individual_id", placeholder="Enter Individual ID")}}
+  </div>
+  <div class="form-group">
+    <div class="input-group">
+			{{form.genotype(type="text", class_="form-control", id="genotype", placeholder="Enter Genotype")}}
+    </div>
+  </div>
+  <button type="submit" class="btn btn-default">Add</button>
+</form>
+
+</div>
+<table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Family ID</th>
+          <th>Individual</th>
+          <th>Father</th>
+					<th>Mother</th>
+					<th>Gender</th>
+					<th>Phenotypes</th>
+        </tr>
+      </thead>
+      <tbody>
+			{% for row in rows %}
+			<tr>
+				<td>{{row.family_id}}</td>
+				<td>{{row.individual_id}}</td>
+				<td>{{row.father_id}}</td>
+				<td>{{row.mother_id}}</td>
+				<td>{{row.gender}}</td>
+				<td>{{row.phen}}</td>
+			</tr>
+
+			{% endfor %}
+      </tbody>
+    </table>
+
 {% endblock %}
 

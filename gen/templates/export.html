@@ -1,5 +1,33 @@
 {% extends "layout.html" %}
 
 {% block body %}
+<a href="#" class="btn btn-success"><i class="fa fa-download"></i> Download</a>
+<table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Family ID</th>
+          <th>Individual</th>
+          <th>Father</th>
+					<th>Mother</th>
+					<th>Gender</th>
+					<th>Genotype</th>
+					<th>Phenotype</th>
+        </tr>
+      </thead>
+      <tbody>
+			{% for row in rows %}
+			<tr>
+				<td>{{row.family_id}}</td>
+				<td>{{row.individual_id}}</td>
+				<td>{{row.father_id}}</td>
+				<td>{{row.mother_id}}</td>
+				<td>{{row.gender}}</td>
+				<td>{{row.gen}}</td>
+				<td>{{row.phen}}</td>
+			</tr>
+
+			{% endfor %}
+      </tbody>
+    </table>
 {% endblock %}
 

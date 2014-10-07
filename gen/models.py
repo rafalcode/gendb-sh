@@ -22,3 +22,34 @@ class sample_table(db.Model):
 	phenotype_2 = db.Column(db.String(45))
 	phenotype_3 = db.Column(db.String(45))
 	phenotype_4 = db.Column(db.String(45))
+
+class Individual(db.Model):
+	__tablename__ = 'individual'
+
+	individual_id			= db.Column(db.String(45), primary_key=True)
+	father_id					= db.Column(db.String(45))
+	mother_id					= db.Column(db.String(45))
+	gender						= db.Column(db.Integer)
+	family_id					= db.Column(db.Integer)
+	phenotype					= db.relationship('Phenotype', backref='pheno', lazy='dynamic')
+
+class Phenotype(db.Model):
+	phenotype_id			= db.Column(db.Integer, primary_key=True)
+	individual_id 		= db.Column(db.String(45),
+			db.ForeignKey('individual.individual_id'))
+	phenotype					= db.Column(db.String(45))
+
+class Genotype(db.Model):
+	genotype_id				= db.Column(db.Integer, primary_key=True)
+	individual_id			= db.Column(db.String(45),
+			db.ForeignKey('individual.individual_id'))
+	genotype					= db.Column(db.String(45))
+
+class Family(db.Model):
+	fmimly_id					= db.Column(db.String(45), primary_key=True)
+	mother_id					= db.Column(db.String(45))
+	father_id					= db.Column(db.String(45))
+	child_1						= db.Column(db.String(45))
+	child_2						= db.Column(db.String(45))
+	child_3						= db.Column(db.String(45))
+

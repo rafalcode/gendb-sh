@@ -63,14 +63,21 @@
 
 
           </ul>
-          <ul class="nav nav-sidebar">
-            <li><a href="">Nav item</a></li>
-          </ul>
-          <ul class="nav nav-sidebar">
-            <li><a href="">Another nav item</a></li>
-          </ul>
+          
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+			{% with messages = get_flashed_messages(with_categories=true) %}
+
+			{% if messages  %}
+			{% for category, message in messages %}
+			<div class="alert alert-{{category}}" style="margin-top: 20px;">
+					
+					<button type="button" class="close" data-dismiss="alert">×</button>
+					{{ message }}</div>
+
+			{% endfor %}
+			{% endif %}
+			{% endwith %}
 					<h1 class="page-header">{{title}}</h1>
 
           

@@ -4,39 +4,19 @@
 <table class="table table-hover">
       <thead>
         <tr>
-          <th>id</th>
-          <th>Family ID</th>
           <th>Individual</th>
           <th>Father</th>
-					<th>Mother</th>
-					<th>Gender</th>
-					<th>Genotype 1</th>
-					<th>Genotype 2</th>
-					<th>Genotype 3</th>
-					<th>Genotype 4</th>
-					<th>Phenotype 1</th>
-					<th>Phenotype 2</th>
-					<th>Phenotype 3</th>
-					<th>Phenotype 4</th>
+          <th>Mother</th>
+          <th>Gender</th>
         </tr>
       </thead>
       <tbody>
 			{% for row in rows %}
 			<tr>
-				<td>{{row.id}}</td>
-				<td>{{row.family_id}}</td>
-				<td>{{row.individual}}</td>
-				<td>{{row.father}}</td>
-				<td>{{row.mother}}</td>
+				<td>{{row.individual_id}}</td>
+				<td>{{row.father_id}}</td>
+				<td>{{row.mother_id}}</td>
 				<td>{{row.gender}}</td>
-				<td>{{row.genotype_1}}</td>
-				<td>{{row.genotype_2}}</td>
-				<td>{{row.genotype_3}}</td>
-				<td>{{row.genotype_4}}</td>
-				<td>{{row.phenotype_1}}</td>
-				<td>{{row.phenotype_2}}</td>
-				<td>{{row.phenotype_3}}</td>
-				<td>{{row.phenotype_4}}</td>
 			</tr>
 
 			{% endfor %}
