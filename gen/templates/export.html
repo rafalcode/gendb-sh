@@ -1,8 +1,13 @@
 {% extends "layout.html" %}
 
 {% block body %}
-<a href="#" class="btn btn-success"><i class="fa fa-download"></i> Download</a>
-<table class="table table-hover">
+<a href="{{url_for('download_gens', filename='gen_data.csv')}}" class="btn btn-success"><i class="fa fa-download"></i> Download Full Tables</a>
+<a href="{{url_for('download_indiv', filename='indiv_data.csv')}}" class="btn btn-success"><i class="fa fa-download"></i> Download Individuals Data</a>
+<a href="{{url_for('download_single_gen', filename='gen_data.csv')}}" class="btn btn-success"><i class="fa fa-download"></i> Download Genotype Data</a>
+<a href="{{url_for('download_single_phen', filename='phen_data.csv')}}" class="btn btn-success"><i class="fa fa-download"></i> Download Phenotype Data</a>
+
+
+<!--<table class="table table-hover">
       <thead>
         <tr>
           <th>Family ID</th>
@@ -28,6 +33,6 @@
 
 			{% endfor %}
       </tbody>
-    </table>
+    </table>-->
 {% endblock %}
 

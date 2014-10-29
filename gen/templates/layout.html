@@ -50,10 +50,14 @@
 						<li {% if request.path == "/" %} class="active" {% endif %}>
 						<a href="{{url_for('index')}}"><i class="fa fa-eye"></i> Overview</a>
 						</li>
-						<li {% if request.path == "/reports" %} class="active" {% endif %}>
-						<a href="{{url_for('reports')}}"><i class="fa fa-folder-o"></i> Reports</a>
+						<li {% if request.path == "/projects" %} class="active" {% endif %}>
+						<a href="{{url_for('projects')}}"><i class="fa fa-download"></i> Projects</a>
 						</li>
-            <li><a href="#"><i class="fa fa-bar-chart"></i> Analytics</a></li>
+
+						<!--<li {% if request.path == "/reports" %} class="active" {% endif %}>
+						<a href="{{url_for('reports')}}"><i class="fa fa-folder-o"></i> Reports</a>
+						</li>-->
+            <!--<li><a href="#"><i class="fa fa-bar-chart"></i> Analytics</a></li>-->
             <li {% if request.path == "/export" %} class="active" {% endif %}>
 						<a href="{{url_for('export_data')}}"><i class="fa fa-download"></i> Export</a>
 						</li>

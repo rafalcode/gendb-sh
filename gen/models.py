@@ -53,3 +53,7 @@ class Family(db.Model):
 	child_2						= db.Column(db.String(45))
 	child_3						= db.Column(db.String(45))
 
+class Project(db.Model):
+	project_id				= db.Column(db.Integer, primary_key=True)
+	name							= db.Column(db.String(100))
+	description				= db.Column(db.String(500))
