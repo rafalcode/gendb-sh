@@ -57,3 +57,16 @@ class Project(db.Model):
 	project_id				= db.Column(db.Integer, primary_key=True)
 	name							= db.Column(db.String(100))
 	description				= db.Column(db.String(500))
+	ped_file					= db.relationship('York_Ped',
+			backref='Project',
+			lazy='dynamic')
+
+class York_Ped(db.Model):
+	idyork_ped				= db.Column(db.Integer, primary_key=True)
+	family_id					= db.Column(db.String(45))
+	paternal_id				= db.Column(db.String(45))
+	maternal_id				= db.Column(db.String(45))
+	gender						= db.Column(db.String(45))
+	phenotype					= db.Column(db.String(45))
+	genotype_sec			= db.Column(db.Binary)
+	project_id				= db.Column(db.Integer, db.ForeignKey('project.project_id'))

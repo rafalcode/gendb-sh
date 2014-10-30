@@ -4,6 +4,6 @@ WTF_CSRF_ENABLED = True
 SECRET_KEY =  '432njrjh245hjfds&A2hkj4'
 
 UPLOAD_FOLDER = '/cs/home/vt3/SHproject/uploads'
-ALLOWED_EXTENSIONS = set(['csv','.xls'])
+ALLOWED_EXTENSIONS = set(['ped', 'map'])
 
 

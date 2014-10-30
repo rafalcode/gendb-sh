@@ -1,5 +1,30 @@
 {% extends "layout.html" %}
 
 {% block body %}
-
+<div class="col-md-12">
+	<div class="row">
+		<div class="col-md-6">
+			<h3>{{rows.name}}</h3>
+			<p>{{rows.description}}</p>
+		</div>
+		<div class="col-md-6">
+			<form role="form" action="{{url_for('york_gen')}}" method=post enctype=multipart/form-data>
+				<div class="form-group">
+					<label for="pedFile">.ped file</label>
+					<input type="file" name="ped">
+					<input type="hidden" name="id" value="{{rows.project_id}}">
+				</div>
+				<button type="submit" class="btn btn-success">Upload</button>
+			</form>
+			<form role="form" action="{{url_for('york_gen_map')}}" method=post enctype=multipart/form-data>
+				<div class="form-group">
+					<label for="mapFile">.map file</label>
+					<input type="file" name="map">
+					<input type="hidden" name="id" value="{{rows.project_id}}">
+				</div>
+				<button type="submit" class="btn btn-success">Upload</button>
+			</form>
+		</div>
+	</div>
+</div>
 {% endblock %}

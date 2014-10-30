@@ -184,6 +184,42 @@ def upload_genotypes():
 		flash("Invalid file, please try again", "danger")
 		return redirect(url_for('import_data'))
 
+"""
+	CODE DUPLICATION WITH york_gen_map
+	TODO: combine into one function
+"""
+@gen_app.route('/york_gen', methods=['POST'])
+def york_gen():
+	print request.method
+	if request.method == 'POST':
+		ped = request.files['ped']
+
+		if ped and allowed_file(ped.filename):
+			filename = secure_filename(ped.filename)
+			ped.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
+			flash(".PED uploaded", "success")
+			return redirect(url_for('project_page', id=request.form['id']))
+	
+	flash("Did not wrok", "danger")
+	return redirect(url_for('projects'))
+
+"""
+	CODE DUPLICATION WITH york_gen
+	TODO: combine into one function
+"""
+@gen_app.route('/york_gen_map', methods=['POST'])
+def york_gen_map():
+	if request.method == 'POST':
+		mapf = request.files['map']
+
+		if mapf and allowed_file(mapf.filename):
+			filename = secure_filename(mapf.filename)
+			mapf.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
+			flash(".MAP uploaded", "success")
+			return redirect(url_for('project_page', id=request.form['id']))
+	flash("Did not wrok", "danger")
+	return redirect(url_for('projects'))
+
 @gen_app.route('/uploads/<filename>')
 def uploaded_file(filename):
 	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename)
@@ -239,9 +275,13 @@ def projects():
 
 	return render_template('projects.html', title="Projects", rows=project_list)
 
-@gen_app.route('/projects/<int:id>')
+@gen_app.route('/projects/<id>')
 def project_page(id):
-	project = models.Project.query.filter_by(id=id).one()
+	project = models.Project.query.filter_by(project_id=id).one()
+
+	return render_template('single_project.html',
+			title=project.name,
+			rows=project)
 
 @gen_app.route('/add_project', methods=['GET','POST'])
 def add_project():
