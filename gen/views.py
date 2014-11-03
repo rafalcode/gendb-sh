@@ -1,19 +1,28 @@
-from gen import gen_app, models, db
+from gen import gen_app,models, db, login_manager
 from flask import render_template, flash, redirect, request, url_for, \
-		send_from_directory
-from .forms import AddGenotype, AddProject
+		send_from_directory, g
+from .forms import AddGenotype, AddProject, LogInForm
+from flask.ext.login import login_user, logout_user, current_user, login_required
 from werkzeug import secure_filename
-import os, csv
+import os, csv, sys
 
 """
 			Helper Functions
 """
-
 def allowed_file(filename):
 	return '.' in filename and \
 			filename.rsplit('.', 1)[1] in gen_app.config['ALLOWED_EXTENSIONS']
 
+@gen_app.before_request
+def before_reques():
+	g.user=current_user
+
+@login_manager.user_loader
+def load_user(user_id):
+	return models.User.query.get(int(user_id))
+
 @gen_app.route('/')
+@login_required
 def index():
 	rows = models.Individual.query.all()
 	return render_template('index.html', 
@@ -28,7 +37,29 @@ def new_user(name):
 	
 	return "user added"
 
+@gen_app.route('/login', methods=['GET', 'POST'])
+def login():
+	form = LogInForm()
+	if form.validate_on_submit():
+		if request.form["username"] ==  "test" and request.form["password"] == "123":
+			user = models.User.query.get(int(1))
+			login_user(user)
+			#g.user = user
+			return redirect(url_for('index'))
+
+	return render_template('login.html', form=form)
+
+@gen_app.route('/logout')
+@login_required
+def logout():
+	logout_user()
+	return redirect(url_for('index'))
+	
+"""
+	MENU VIEWS
+"""
 @gen_app.route('/reports')
+@login_required
 def reports():
 	title = "Reports"
 
@@ -40,6 +71,7 @@ def reports():
 			rows=rows)
 
 @gen_app.route('/export')
+@login_required
 def export_data():
 	title = "Export"
 	genos = db.engine.execute("SELECT * FROM genos;").fetchall()
@@ -48,6 +80,7 @@ def export_data():
 	return render_template('export.html', title=title, rows=genos)
 
 @gen_app.route('/import', methods=['GET', 'POST'])
+@login_required
 def import_data():
 	title = "Import"
 	phenos = db.engine.execute("SELECT * FROM phenos;").fetchall()
@@ -68,6 +101,7 @@ def import_data():
 	return render_template('import.html', title=title, rows=phenos, form=form)
 
 @gen_app.route('/upload_template', methods=['GET', 'POST'])
+@login_required
 def upload_template():
 	if request.method == 'POST':
 
@@ -124,6 +158,7 @@ def upload_template():
 
 
 @gen_app.route('/upload_phenotypes', methods=['GET', 'POST'])
+@login_required
 def upload_phenotypes():
 	if request.method == 'POST':
 
@@ -156,6 +191,7 @@ def upload_phenotypes():
 		return redirect(url_for('import_data'))
 
 @gen_app.route('/upload_genotypes', methods=['GET', 'POST'])
+@login_required
 def upload_genotypes():
 	if request.method == 'POST':
 
@@ -190,14 +226,49 @@ def upload_genotypes():
 """
 @gen_app.route('/york_gen', methods=['POST'])
 def york_gen():
-	print request.method
+	csv.field_size_limit(sys.maxsize)
+	num_rows = 0
+
 	if request.method == 'POST':
 		ped = request.files['ped']
 
 		if ped and allowed_file(ped.filename):
 			filename = secure_filename(ped.filename)
 			ped.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
-			flash(".PED uploaded", "success")
+			flash(".PED file uploaded successfully", "success")
+			with open(gen_app.config['UPLOAD_FOLDER'] + '/' + filename, 'rb') as csvfile:
+				sr = csv.reader(csvfile, delimiter=' ')
+
+				for row in sr:
+					num_rows = num_rows + 1
+
+					cols = len(row)
+					ped = models.York_Ped()
+
+					ped.family_id = row[0]
+					ped.individual_id = row[1]
+					ped.paternal_id = row[2]
+					ped.maternal_id = row[3]
+					ped.gender = row[4]
+					ped.phenotype = row[5]
+					gen_sec = ""
+					for x in range(7,cols):
+						gen_sec = gen_sec + row[x] 
+					
+					ped.genotype_sec = gen_sec					
+					ped.project_id = request.form['id']
+					
+						
+					db.session.add(ped)
+
+			log_entry = models.Log()
+			import time
+			log_entry.timestamp = int(time.time())
+			log_entry.user_id = g.user.user_id
+			log_entry.action = "Upload ped file for project " + request.form['id']
+			db.session.add(log_entry)
+			db.session.commit()
+			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
 			return redirect(url_for('project_page', id=request.form['id']))
 	
 	flash("Did not wrok", "danger")

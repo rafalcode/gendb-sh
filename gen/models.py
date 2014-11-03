@@ -1,8 +1,23 @@
 from gen import db
 
 class User(db.Model):
-	user_id = db.Column(db.Integer, primary_key=True)
-	user_name = db.Column(db.String(45), index=True, unique=True)
+	user_id					= db.Column(db.Integer, primary_key=True)
+	user_name				= db.Column(db.String(45), index=True, unique=True)
+	email						= db.Column(db.String(45))
+
+	log_entry				= db.relationship('Log', backref='log', lazy='dynamic')
+
+	def is_authenticated(self):
+		return True
+	
+	def is_active(self):
+		return True
+
+	def is_anonymous(self):
+		return False
+	
+	def get_id(self):
+		return unicode(self.user_id)
 
 	def __repr__(self):
 		return '<User %r>' % (self.user_name) 
@@ -62,7 +77,10 @@ class Project(db.Model):
 			lazy='dynamic')
 
 class York_Ped(db.Model):
+	__tablename__ = 'york_ped'
+
 	idyork_ped				= db.Column(db.Integer, primary_key=True)
+	individual_id			= db.Column(db.String(45))
 	family_id					= db.Column(db.String(45))
 	paternal_id				= db.Column(db.String(45))
 	maternal_id				= db.Column(db.String(45))
@@ -70,3 +88,9 @@ class York_Ped(db.Model):
 	phenotype					= db.Column(db.String(45))
 	genotype_sec			= db.Column(db.Binary)
 	project_id				= db.Column(db.Integer, db.ForeignKey('project.project_id'))
+
+class Log(db.Model):
+	idlog							= db.Column(db.Integer, primary_key=True)
+	timestamp					= db.Column(db.Integer)
+	user_id						= db.Column(db.Integer, db.ForeignKey('user.user_id'))
+	action						= db.Column(db.String(400))
