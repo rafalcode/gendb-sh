@@ -1,9 +1,9 @@
 from gen import db
 
 class User(db.Model):
-	user_id					= db.Column(db.Integer, primary_key=True)
-	user_name				= db.Column(db.String(45), index=True, unique=True)
+	user_name				= db.Column(db.String(45), index=True, unique=True, primary_key=True)
 	email						= db.Column(db.String(45))
+	password				= db.Column(db.String(128))
 
 	log_entry				= db.relationship('Log', backref='log', lazy='dynamic')
 
@@ -17,7 +17,7 @@ class User(db.Model):
 		return False
 	
 	def get_id(self):
-		return unicode(self.user_id)
+		return unicode(self.user_name)
 
 	def __repr__(self):
 		return '<User %r>' % (self.user_name) 
@@ -92,5 +92,5 @@ class York_Ped(db.Model):
 class Log(db.Model):
 	idlog							= db.Column(db.Integer, primary_key=True)
 	timestamp					= db.Column(db.Integer)
-	user_id						= db.Column(db.Integer, db.ForeignKey('user.user_id'))
+	user_id						= db.Column(db.String(64), db.ForeignKey('user.user_name'))
 	action						= db.Column(db.String(400))
