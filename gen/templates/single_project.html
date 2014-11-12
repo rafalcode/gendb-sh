@@ -7,15 +7,15 @@
 			<p>{{rows.description}}</p>
 		</div>
 		<div class="col-md-6">
-			<form role="form" action="{{url_for('york_gen')}}" method=post enctype=multipart/form-data>
+			<form role="form" action="{{url_for('upload_individual')}}" method=post enctype=multipart/form-data>
 				<div class="form-group">
-					<label for="pedFile">.ped file</label>
-					<input type="file" name="ped">
+					<label for="pedFile">Individuals file</label>
+					<input type="file" name="individuals">
 					<input type="hidden" name="id" value="{{rows.project_id}}">
 				</div>
 				<button type="submit" class="btn btn-success">Upload</button>
 			</form>
-			<form role="form" action="{{url_for('york_gen_map')}}" method=post enctype=multipart/form-data>
+			<form role="form" action="{{url_for('upload_individual')}}" method=post enctype=multipart/form-data>
 				<div class="form-group">
 					<label for="mapFile">.map file</label>
 					<input type="file" name="map">

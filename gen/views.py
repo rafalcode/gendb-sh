@@ -6,6 +6,7 @@ from flask.ext.login import login_user, logout_user, current_user, login_require
 from werkzeug import secure_filename
 import os, csv, sys
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy import exc
 
 """
 ==========================================
@@ -84,82 +85,6 @@ def reports():
 			title=title,
 			rows=rows)
 
-
-
-"""
-	CODE DUPLICATION WITH york_gen_map
-	TODO: combine into one function
-"""
-@gen_app.route('/york_gen', methods=['POST'])
-def york_gen():
-	csv.field_size_limit(sys.maxsize)
-	num_rows = 0
-
-	if request.method == 'POST':
-		ped = request.files['ped']
-
-		if ped and allowed_file(ped.filename):
-			filename = secure_filename(ped.filename)
-			ped.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
-			flash(".PED file uploaded successfully", "success")
-			with open(gen_app.config['UPLOAD_FOLDER'] + '/' + filename, 'rb') as csvfile:
-				sr = csv.reader(csvfile, delimiter=' ')
-
-				for row in sr:
-					num_rows = num_rows + 1
-
-					cols = len(row)
-					ped = models.York_Ped()
-
-					ped.family_id = row[0]
-					ped.individual_id = row[1]
-					ped.paternal_id = row[2]
-					ped.maternal_id = row[3]
-					ped.gender = row[4]
-					ped.phenotype = row[5]
-					gen_sec = ""
-					for x in range(7,cols):
-						gen_sec = gen_sec + row[x] 
-					
-					ped.genotype_sec = gen_sec					
-					ped.project_id = request.form['id']
-					
-						
-					db.session.add(ped)
-
-			log_entry = models.Log()
-			import time
-			log_entry.timestamp = int(time.time())
-			log_entry.user_id = g.user.user_name
-			log_entry.action = "Upload ped file for project " + request.form['id']
-			db.session.add(log_entry)
-			db.session.commit()
-			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
-			return redirect(url_for('project_page', id=request.form['id']))
-	
-	flash("Invalid file", "danger")
-	return redirect(url_for('project_page', id=request.form['id']))
-
-"""
-	CODE DUPLICATION WITH york_gen
-	TODO: combine into one function
-"""
-@gen_app.route('/york_gen_map', methods=['POST'])
-def york_gen_map():
-	if request.method == 'POST':
-		mapf = request.files['map']
-
-		if mapf and allowed_file(mapf.filename):
-			filename = secure_filename(mapf.filename)
-			mapf.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
-			flash(".MAP uploaded", "success")
-			return redirect(url_for('project_page', id=request.form['id']))
-	flash("Invalid file", "danger")
-	return redirect(url_for('project_page', id=request.form['id']))
-
-
-
-
 @gen_app.route('/projects')
 def projects():
 	project_list = models.Project.query.all()
@@ -190,3 +115,65 @@ def add_project():
 	return render_template('add_project.html', 
 			title="New Project",
 			ap=form)
+
+
+@gen_app.route('/upload_individual', methods=['POST'])
+def upload_individual():
+	csv.field_size_limit(sys.maxsize)
+	num_rows = 0
+
+	if request.method == 'POST':
+		ind_file = request.files['individuals']
+
+		if ind_file and allowed_file(ind_file.filename):
+			filename = secure_filename(ind_file.filename)
+			ind_file.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
+			flash("Individuals file uploaded successfully", "success")
+
+			try:
+				with open(gen_app.config['UPLOAD_FOLDER'] + '/' + filename, 'rb') as csvfile:
+					sr = csv.reader(csvfile, delimiter=' ')
+
+					for row in sr:
+						num_rows = num_rows+1
+						if len(row) != 3:
+							flash("Ivalid file format", "danger")
+							return redirect(url_for('project_page', id=request.form['id']))
+						ind = models.Individual()
+						ind.individual_id = row[0]
+						ind.old_id = row[1]
+						ind.new_id = row[2]
+						ind.project_id = request.form['id']
+						db.session.add(ind)
+					"""
+					Create log entry
+					"""
+					log_entry = models.Log()
+					import time
+					log_entry.timestamp = int(time.time())
+					log_entry.user_id = g.user.user_name
+					log_entry.action = "Upload Individual file for project " + request.form['id']
+					db.session.add(log_entry)
+					"""
+					Commit changes to DB
+					"""
+					db.session.commit()
+			except exc.IntegrityError, e:
+				try:
+					os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
+				except OSError,e :
+					print str(e)
+				flash(str(e), "danger")
+				return redirect(url_for('project_page', id=request.form['id']))
+
+			try:
+				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
+			except OSError,e :
+				print str(e)
+			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
+			return redirect(url_for('project_page', id=request.form['id']))
+	
+	flash("Invalid file", "danger")
+	return redirect(url_for('project_page', id=request.form['id']))
+
+
