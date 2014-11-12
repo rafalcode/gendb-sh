@@ -15,10 +15,10 @@
 				</div>
 				<button type="submit" class="btn btn-success">Upload</button>
 			</form>
-			<form role="form" action="{{url_for('upload_individual')}}" method=post enctype=multipart/form-data>
+			<form role="form" action="{{url_for('single_geno')}}" method=post enctype=multipart/form-data>
 				<div class="form-group">
-					<label for="mapFile">.map file</label>
-					<input type="file" name="map">
+					<label for="mapFile">Single genotype  file</label>
+					<input type="file" name="single_geno">
 					<input type="hidden" name="id" value="{{rows.project_id}}">
 				</div>
 				<button type="submit" class="btn btn-success">Upload</button>

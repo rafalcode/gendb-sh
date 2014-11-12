@@ -176,4 +176,68 @@ def upload_individual():
 	flash("Invalid file", "danger")
 	return redirect(url_for('project_page', id=request.form['id']))
 
+@gen_app.route('/single_geno', methods=['POST'])
+def single_geno():
+	csv.field_size_limit(sys.maxsize)
+	num_rows = 0
+
+	if request.method == 'POST':
+		single_geno = request.files['single_geno']
+
+		if single_geno and allowed_file(single_geno.filename):
+			filename = secure_filename(single_geno.filename)
+			single_geno.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
+			flash("Genotype file uploaded successfully", "success")
+
+			try:
+				with open(gen_app.config['UPLOAD_FOLDER'] + '/' + filename, 'rb') as csvfile:
+					sr = csv.reader(csvfile, delimiter=' ')
+
+					for row in sr:
+						num_rows = num_rows+1
+						if len(row) != 3:
+							flash("Ivalid file format", "danger")
+							return redirect(url_for('project_page', id=request.form['id']))
+						gen = models.Genotype()
+						gen.individual_id = row[0]
+						gen.snp = row[1]
+						if (row[2] != "Undetermined"):
+							#TODO improve parsing
+							gen.call = row[2][-3:]
+						else:
+							gen.call = "X"
+						gen.project_id = request.form['id']
+						db.session.add(gen)
+
+					"""
+					Create log entry
+					"""
+					log_entry = models.Log()
+					import time
+					log_entry.timestamp = int(time.time())
+					log_entry.user_id = g.user.user_name
+					log_entry.action = "Upload Genotype file for project " + request.form['id']
+					db.session.add(log_entry)
+					"""
+					Commit changes to DB
+					"""
+					db.session.commit()
+			except exc.IntegrityError, e:
+				try:
+					os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
+				except OSError,e :
+					print str(e)
+				flash(str(e), "danger")
+				return redirect(url_for('project_page', id=request.form['id']))
+
+			try:
+				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
+			except OSError,e :
+				print str(e)
+			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
+			return redirect(url_for('project_page', id=request.form['id']))
+	
+	flash("Invalid file", "danger")
+	return redirect(url_for('project_page', id=request.form['id']))
+
 

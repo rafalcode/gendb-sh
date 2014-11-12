@@ -31,6 +31,7 @@ class Project(db.Model):
 	name							= db.Column(db.String(100))
 	description				= db.Column(db.String(500))
 	individual				= db.relationship('Individual', backref='individual', lazy='dynamic')
+	genotype					= db.relationship('Genotype', backref='genotype_project', lazy='dynamic')
 	
 
 class Log(db.Model):
@@ -42,5 +43,14 @@ class Log(db.Model):
 class Individual(db.Model):
 	individual_id			= db.Column(db.Integer, primary_key=True)
 	old_id						= db.Column(db.String(30))
-	new_id						= db.Column(db.String(30))
+	new_id						= db.Column(db.String(30), primary_key=True)
+	project_id				= db.Column(db.Integer, db.ForeignKey('project.project_id'))
+	genotype					= db.relationship('Genotype', backref='genotype_individual', lazy='dynamic')
+
+class Genotype(db.Model):
+	#TODO Change from int ID to composite keys
+	genotype_id				= db.Column(db.Integer, primary_key=True)
+	individual_id			= db.Column(db.String(45), db.ForeignKey('individual.new_id'))
+	snp								= db.Column(db.String(45))
+	call							= db.Column(db.String(3))
 	project_id				= db.Column(db.Integer, db.ForeignKey('project.project_id'))
