@@ -240,4 +240,18 @@ def single_geno():
 	flash("Invalid file", "danger")
 	return redirect(url_for('project_page', id=request.form['id']))
 
+@gen_app.route('/download_ped/<int:project_id>/<path:filename>', methods=['GET'])
+def download_ped(project_id, filename):
+	ped = models.Individual.query.join(models.Genotype).filter(models.Individual.new_id == models.Genotype.individual_id).order_by(models.Individual.new_id.asc()).all()
+	
+	with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'wb') as f:
+		writer = csv.writer(f, delimiter=',')
+		
+		for row in ped:
+			row = [] + [str(row.individual_id)] + [str(row.new_id)] + [str(row.genotype[0].call)]
+			writer.writerow(row)
 
+	for row in ped:
+		print row.new_id
+
+	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename=filename)
