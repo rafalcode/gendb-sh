@@ -1,6 +1,16 @@
 {% extends "layout.html" %}
 
 {% block body %}
+<div class="col-md-6">
+<div class="panel panel-success">
+  <div class="panel-heading">
+    <h3 class="panel-title">Database Stats</h3>
+  </div>
+  <div class="panel-body">
+		There are currently <span class="label label-warning">{{project_count}} projects</span> containing <span class="label label-warning">{{ind_count}} individuals</span> with <span class="label label-warning">{{gen_entr}} genotype</span> and <span class="label label-warning">{{phen_entr}} phenotype</span> entries.
+  </div>
+</div>
+</div>
 <!--<table class="table table-hover">
       <thead>
         <tr>

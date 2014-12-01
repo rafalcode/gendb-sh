@@ -7,6 +7,7 @@ from werkzeug import secure_filename
 import os, csv, sys
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import exc
+from sqlalchemy import func, and_, or_, desc
 
 """
 ==========================================
@@ -32,8 +33,16 @@ def index():
 	Displays overview information with content
 	from the system
 	"""
+	ind_count = models.Individual.query.count()
+	project_count = models.Project.query.count()
+	gen_entr = models.Genotype.query.count()
+	phen_entr = 0
 	return render_template('index.html', 
-			title='Overview')
+			title='Overview',
+			ind_count=ind_count,
+			project_count=project_count,
+			gen_entr=gen_entr,
+			phen_entr=phen_entr)
 
 @gen_app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -107,6 +116,15 @@ def add_project():
 	if form.validate_on_submit():
 		project.name = form.project_name.data
 		project.description = form.project_description.data
+		"""
+		Create log entry
+		"""
+		log_entry = models.Log()
+		import time
+		log_entry.timestamp = int(time.time())
+		log_entry.user_id = g.user.user_name
+		log_entry.action = "Created project " + form.project_name.data
+		db.session.add(log_entry)
 		db.session.add(project)
 		db.session.commit()
 
@@ -152,7 +170,7 @@ def upload_individual():
 					import time
 					log_entry.timestamp = int(time.time())
 					log_entry.user_id = g.user.user_name
-					log_entry.action = "Upload Individual file for project " + request.form['id']
+					log_entry.action = "Upload Individual file for project " + request.form['proname']
 					db.session.add(log_entry)
 					"""
 					Commit changes to DB
@@ -216,7 +234,7 @@ def single_geno():
 					import time
 					log_entry.timestamp = int(time.time())
 					log_entry.user_id = g.user.user_name
-					log_entry.action = "Upload Genotype file for project " + request.form['id']
+					log_entry.action = "Upload Genotype file for project " + request.form['proname']
 					db.session.add(log_entry)
 					"""
 					Commit changes to DB
@@ -242,16 +260,157 @@ def single_geno():
 
 @gen_app.route('/download_ped/<int:project_id>/<path:filename>', methods=['GET'])
 def download_ped(project_id, filename):
-	ped = models.Individual.query.join(models.Genotype).filter(models.Individual.new_id == models.Genotype.individual_id).order_by(models.Individual.new_id.asc()).all()
 	
-	with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'wb') as f:
+	print "FAKKASOFDJ"
+	final_out = {}
+	gens_list = {}
+	ordered_ind = []
+
+	ind = models.Individual.query.order_by(models.Individual.new_id.asc()).all()
+	for row in ind:
+		ordered_ind.append(row.new_id)
+		final_out[row.new_id] = []
+	
+	gens = models.Genotype.query.all()
+	for row in gens:
+		gens_list[row.snp] = [row.snp]
+
+	for i in gens_list:
+		current_gen = models.Genotype.query.order_by().filter(models.Genotype.snp == i).all()
+		for row in current_gen:
+			final_out[row.individual_id] += [row.call]
+	
+	new_final_out = {}
+	for row in final_out:
+		if final_out[row] != []:
+			new_final_out[row] = final_out[row]
+	
+
+	with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'w+') as f:
 		writer = csv.writer(f, delimiter=',')
-		
-		for row in ped:
-			row = [] + [str(row.individual_id)] + [str(row.new_id)] + [str(row.genotype[0].call)]
-			writer.writerow(row)
+		final_line = []
+		for i in ind:
+			final_line.append([i.new_id])
 
-	for row in ped:
-		print row.new_id
+		for column in range(len(gens_list)):
+			A = False
+			C = False
+			G = False
+			T = False
+			X = False
 
+			for row in new_final_out:
+				if new_final_out[row] != []:
+					spl = new_final_out[row][column].split("/")
+					if spl[0] == "A" or spl[1] == "A":
+						A = True
+					if spl[0] == "C" or spl[1] == "C":
+						C = True
+					if spl[0] == "G" or spl[1] == "G":
+						G = True
+					if spl[0] == "T" or spl[1] == "T":
+						T = True
+					#elif spl[0] == "X" or spl[2] == "X":
+					#	X = True
+
+			lol = 0
+			for row in new_final_out:
+				if new_final_out[row] != []:
+					fr = ""
+					sn = ""
+					if A and G:
+						if new_final_out[row][column] == "A/G":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "A/A":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "G/G":
+							fr = sn = "2"
+					elif A and C:
+						if new_final_out[row][column] == "A/C":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "A/A":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "C/C":
+							fr = sn = "2"
+					elif A and T:
+						if new_final_out[row][column] == "A/T":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "A/A":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "T/T":
+							fr = n = "2"
+					elif C and G:
+						if new_final_out[row][column] == "C/G":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "C/C":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "G/G":
+							fr = sn = "2"
+					elif C and T:
+						if new_final_out[row][column] == "C/T":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "C/C":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "T/T":
+							fr = sn = "2"
+					elif G and T:
+						if new_final_out[row][column] == "G/T":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "G/G":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "T/T":
+							fr = sn = "2"
+					elif X:
+						fr = sn = "X"
+					new_final_out[row][column] = fr+','+sn
+					lol += 1
+
+		for row in ordered_ind:
+			if new_final_out[row] != []:
+				
+				c = []
+				for column in range(len(gens_list)):
+					c += new_final_out[row][column].split(',')
+
+
+				z = [] + [row] + c
+				writer.writerow(z)
+		#print final_out
+		#row = [] + [str(row.individual_id)] + [str(row.new_id)] + [fr] + [sn]
+		#writer.writerow(row)
 	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename=filename)
+
+@gen_app.route('/download_map/<name>')
+def download_map(name):
+	from sqlalchemy import distinct
+	geno = models.Genotype.query.all()
+	darn = {}
+
+	for row in geno:
+		darn[row.snp] = row.snp
+
+
+	with open(gen_app.config['UPLOAD_FOLDER'] + name, 'w+') as f:
+		writer = csv.writer(f, delimiter=',')
+
+		for row in darn:
+			r = [] + ["M"] + [darn[row]]
+			writer.writerow(r)
+	
+	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename=name)
+
+
+
+@gen_app.route('/log')
+def log_page():
+	log = models.Log.query.all()
+	import datetime
+	for row in log:
+		row.timestamp = datetime.datetime.fromtimestamp(int(row.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+	return render_template('log.html', title="Logs",rows=log)

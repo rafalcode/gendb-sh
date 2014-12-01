@@ -4,25 +4,54 @@
 <div class="col-md-12">
 	<div class="row">
 		<div class="col-md-6">
+			<a href="#" class="btn btn-primary disabled"><i class="fa fa-sign-in"></i> Join</a>
+			<a href="#" class="btn btn-danger disabled"><i class="fa fa-trash-o"></i> Delete</a>
+			<h3>Description</h3>
 			<p>{{rows.description}}</p>
+			<h3>Contributors</h3>
+<table class="table table-striped table-hover ">
+  <thead>
+    <tr>
+      <th>Username</th>
+      <th>Last Login Date</th>
+      <th>Options</th>
+    </tr>
+		<tr>
+			<td>Example</td>
+			<td>01-01-2014 09:30</td>
+			<td><span class="label label-danger"><i class="fa fa-trash-o"></i></span>   </td>
+		</tr>
+  </thead>
+  <tbody>
+
+	</tbody>
+</table>
 		</div>
 		<div class="col-md-6">
-			<form role="form" action="{{url_for('upload_individual')}}" method=post enctype=multipart/form-data>
+			<form role="form" action="{{url_for('upload_individual')}}" method=post enctype=multipart/form-data class="well">
 				<div class="form-group">
 					<label for="pedFile">Individuals file</label>
 					<input type="file" name="individuals">
 					<input type="hidden" name="id" value="{{rows.project_id}}">
+					<input type="hidden" name="proname" value="{{rows.name}}">
 				</div>
-				<button type="submit" class="btn btn-success">Upload</button>
+				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
 			</form>
-			<form role="form" action="{{url_for('single_geno')}}" method=post enctype=multipart/form-data>
+			<form role="form" action="{{url_for('single_geno')}}" method=post enctype=multipart/form-data class="well">
 				<div class="form-group">
 					<label for="mapFile">Single genotype  file</label>
 					<input type="file" name="single_geno">
 					<input type="hidden" name="id" value="{{rows.project_id}}">
+					<input type="hidden" name="proname" value="{{rows.name}}">
+
 				</div>
-				<button type="submit" class="btn btn-success">Upload</button>
+				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
 			</form>
+			<div class="well">
+				<a class="btn btn-success" href="{{url_for('download_ped', project_id=rows.project_id, filename='file.ped')}}"><i class="fa fa-download"></i> PED file</a>
+				<a class="btn btn-success disabled" href=""><i class="fa fa-download"></i> MAP file</a>
+				<a class="btn btn-success" href="{{url_for('download_map', name='file.map')}}"><i class="fa fa-download"></i> MAP file</a>
+			</div>
 		</div>
 	</div>
 </div>

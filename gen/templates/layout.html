@@ -62,7 +62,9 @@
 						<li {% if request.path == "/projects" %} class="active" {% endif %}>
 						<a href="{{url_for('projects')}}"><i class="fa fa-folder-open"></i> Projects</a>
 						</li>
-
+						<li {% if request.path == "/log" %} class="active" {% endif %}>
+						<a href="{{url_for('log_page')}}"><i class="fa fa-clock-o"></i> Logs</a>
+						</li>
 						<!--<li {% if request.path == "/reports" %} class="active" {% endif %}>
 						<a href="{{url_for('reports')}}"><i class="fa fa-folder-o"></i> Reports</a>
 						</li>-->
@@ -90,7 +92,7 @@
 
           
 
-          <div class="table-responsive">
+          <div class="row">
 
   {% block body %} {% endblock %}
                       </div>
