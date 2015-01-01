@@ -95,12 +95,14 @@ def reports():
 			rows=rows)
 
 @gen_app.route('/projects')
+@login_required
 def projects():
 	project_list = models.Project.query.all()
 
 	return render_template('projects.html', title="Projects", rows=project_list)
 
 @gen_app.route('/projects/<id>')
+@login_required
 def project_page(id):
 	project = models.Project.query.filter_by(project_id=id).one()
 
@@ -109,6 +111,7 @@ def project_page(id):
 			rows=project)
 
 @gen_app.route('/add_project', methods=['GET','POST'])
+@login_required
 def add_project():
 	form = AddProject()
 	project = models.Project() 
@@ -136,6 +139,7 @@ def add_project():
 
 
 @gen_app.route('/upload_individual', methods=['POST'])
+@login_required
 def upload_individual():
 	csv.field_size_limit(sys.maxsize)
 	num_rows = 0
@@ -195,6 +199,7 @@ def upload_individual():
 	return redirect(url_for('project_page', id=request.form['id']))
 
 @gen_app.route('/single_geno', methods=['POST'])
+@login_required
 def single_geno():
 	csv.field_size_limit(sys.maxsize)
 	num_rows = 0
@@ -259,9 +264,9 @@ def single_geno():
 	return redirect(url_for('project_page', id=request.form['id']))
 
 @gen_app.route('/download_ped/<int:project_id>/<path:filename>', methods=['GET'])
+@login_required
 def download_ped(project_id, filename):
 	
-	print "FAKKASOFDJ"
 	final_out = {}
 	gens_list = {}
 	ordered_ind = []
@@ -387,6 +392,7 @@ def download_ped(project_id, filename):
 	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename=filename)
 
 @gen_app.route('/download_map/<name>')
+@login_required
 def download_map(name):
 	from sqlalchemy import distinct
 	geno = models.Genotype.query.all()
@@ -408,6 +414,7 @@ def download_map(name):
 
 
 @gen_app.route('/log')
+@login_required
 def log_page():
 	log = models.Log.query.all()
 	import datetime
