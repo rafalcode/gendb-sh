@@ -198,6 +198,15 @@ def upload_individual():
 	flash("Invalid file", "danger")
 	return redirect(url_for('project_page', id=request.form['id']))
 
+@gen_app.route('/single_pheno', methods=['POST'])
+@login_required
+def single_pheno():
+	
+	
+	return redirect(url_for('project_page', id=request.form['id']))
+
+
+
 @gen_app.route('/single_geno', methods=['POST'])
 @login_required
 def single_geno():
@@ -376,16 +385,46 @@ def download_ped(project_id, filename):
 					new_final_out[row][column] = fr+','+sn
 					lol += 1
 
+		tiny_stack = ['0','0','0']
 		for row in ordered_ind:
-			if new_final_out[row] != []:
+			#TODO That's dirty: you are expecting to catch
+			# an exception in the if in order to skip a missing entry. FIX IT!1!!!11
+
+			
+			try:
+				if new_final_out[row] != []:
+					tiny_stack[0] = tiny_stack[1]
+					tiny_stack[1] = tiny_stack[2]
+					tiny_stack[2] = row
+
+					base_str = row[:-1]
+					if row[-1] == '3':
+						if tiny_stack[1] == base_str+'1':
+							writer.writerow([base_str+'2']+['0']+['0'])
+						elif tiny_stack[1] == base_str+'2':
+							print "do nothing"
+						else:
+							writer.writerow([base_str+'1']+['0']+['0'])
+							writer.writerow([base_str+'2']+['0']+['0'])
+					elif row[-1] == '2' and tiny_stack[1] != base_str+'1':
+							writer.writerow([base_str+'1']+['0']+['0'])
 				
-				c = []
-				for column in range(len(gens_list)):
-					c += new_final_out[row][column].split(',')
+					c = []
 
+					for column in range(len(gens_list)):
+						c += new_final_out[row][column].split(',')
 
-				z = [] + [row] + c
-				writer.writerow(z)
+					par_1 = 0
+					par_2 = 0
+					if int(row[-1]) > 2:
+						par_1 = base_str+'1'
+						par_2 = base_str+'2'
+
+					z = [] + [row] + [par_1] + [par_2] + c
+					writer.writerow(z)
+
+			except KeyError, e:
+				tmeptemptemp = 1+1
 		#print final_out
 		#row = [] + [str(row.individual_id)] + [str(row.new_id)] + [fr] + [sn]
 		#writer.writerow(row)
