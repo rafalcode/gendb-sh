@@ -119,6 +119,7 @@ def add_project():
 	if form.validate_on_submit():
 		project.name = form.project_name.data
 		project.description = form.project_description.data
+		project.owner = g.user.user_name
 		"""
 		Create log entry
 		"""
@@ -136,6 +137,42 @@ def add_project():
 	return render_template('add_project.html', 
 			title="New Project",
 			ap=form)
+
+@gen_app.route('/delete_project/<id>', methods=['GET'])
+@login_required
+def delete_project(id):
+	project = models.Project.query.filter_by(project_id=id).one()
+	if project.owner == g.user.user_name:
+		genotypes = models.Genotype.query.filter_by(project_id=id).delete()
+		db.session.commit()
+		individuals = models.Individual.query.filter_by(project_id=id).delete()
+		db.session.commit()
+		db.session.delete(project)
+		db.session.commit()
+
+		"""
+		Create log entry
+		"""
+		log_entry = models.Log()
+		import time
+		log_entry.timestamp = int(time.time())
+		log_entry.user_id = g.user.user_name
+		log_entry.action = "Deleted project " + project.name
+		db.session.add(log_entry)
+		db.session.add(project)
+		db.session.commit()
+
+		flash('Project deleted successfuly.', 'success')
+	else:
+		flash('You do not have the premision to do that.', 'danger')
+	return redirect(url_for('projects'))
+
+# TODO: finish this
+@gen_app.route('/join_project/<id>', methods=['GET'])
+@login_required
+def join_project(id):
+
+	return redirect(url_for('project_page', id=id))
 
 
 @gen_app.route('/upload_individual', methods=['POST'])
@@ -385,19 +422,25 @@ def download_ped(project_id, filename):
 					new_final_out[row][column] = fr+','+sn
 					lol += 1
 
+
+		# a stack used to keep track of previously encountered IDs
 		tiny_stack = ['0','0','0']
+
 		for row in ordered_ind:
 			#TODO That's dirty: you are expecting to catch
-			# an exception in the if in order to skip a missing entry. FIX IT!1!!!11
-
-			
+			# an exception in the if in order to skip a missing entry. FIX IT!1!!!11	
 			try:
 				if new_final_out[row] != []:
+
+					# shift down the stack
 					tiny_stack[0] = tiny_stack[1]
 					tiny_stack[1] = tiny_stack[2]
 					tiny_stack[2] = row
 
+					# base of the ID
 					base_str = row[:-1]
+
+					# check if child or parent
 					if row[-1] == '3':
 						if tiny_stack[1] == base_str+'1':
 							writer.writerow([base_str+'2']+['0']+['0'])

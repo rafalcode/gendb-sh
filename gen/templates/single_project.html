@@ -4,8 +4,8 @@
 <div class="col-md-12">
 	<div class="row">
 		<div class="col-md-6">
-			<a href="#" class="btn btn-primary disabled"><i class="fa fa-sign-in"></i> Join</a>
-			<a href="#" class="btn btn-danger disabled"><i class="fa fa-trash-o"></i> Delete</a>
+			<a href="{{url_for('join_project', id=rows.project_id)}}" class="btn btn-primary"><i class="fa fa-sign-in"></i> Join</a>
+			<a href="{{url_for('delete_project', id=rows.project_id)}}" class="btn btn-danger"><i class="fa fa-trash-o"></i> Delete</a>
 			<h3>Description</h3>
 			<p>{{rows.description}}</p>
 			<h3>Contributors</h3>

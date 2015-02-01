@@ -6,6 +6,7 @@ class User(db.Model):
 	password				= db.Column(db.String(128))
 
 	log_entry				= db.relationship('Log', backref='log', lazy='dynamic')
+	project_owner		= db.relationship('Project', backref='project', lazy='dynamic')
 
 	def is_authenticated(self):
 		return True
@@ -32,6 +33,7 @@ class Project(db.Model):
 	description				= db.Column(db.String(500))
 	individual				= db.relationship('Individual', backref='individual', lazy='dynamic')
 	genotype					= db.relationship('Genotype', backref='genotype_project', lazy='dynamic')
+	owner							= db.Column(db.String(45), db.ForeignKey('user.user_name'))
 	
 
 class Log(db.Model):
