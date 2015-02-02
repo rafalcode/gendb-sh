@@ -105,21 +105,25 @@ def projects():
 @login_required
 def project_page(id):
 	project = models.Project.query.filter_by(project_id=id).one()
+	contribs = models.User.query.join(models.Membership).filter(models.User.user_name == models.Membership.user_name).all()
 
 	return render_template('single_project.html',
 			title=project.name,
-			rows=project)
+			rows=project,
+			contribs=contribs)
 
 @gen_app.route('/add_project', methods=['GET','POST'])
 @login_required
 def add_project():
 	form = AddProject()
 	project = models.Project() 
+	memship = models.Membership()
 
 	if form.validate_on_submit():
 		project.name = form.project_name.data
 		project.description = form.project_description.data
 		project.owner = g.user.user_name
+
 		"""
 		Create log entry
 		"""
@@ -130,6 +134,11 @@ def add_project():
 		log_entry.action = "Created project " + form.project_name.data
 		db.session.add(log_entry)
 		db.session.add(project)
+		db.session.commit()
+
+		memship.user_name = g.user.user_name
+		memship.project = project.project_id
+		db.session.add(memship)
 		db.session.commit()
 
 		return redirect(url_for('projects'))
@@ -143,6 +152,8 @@ def add_project():
 def delete_project(id):
 	project = models.Project.query.filter_by(project_id=id).one()
 	if project.owner == g.user.user_name:
+		memship = models.Membership.query.filter_by(project=id).delete()
+		db.session.commit()
 		genotypes = models.Genotype.query.filter_by(project_id=id).delete()
 		db.session.commit()
 		individuals = models.Individual.query.filter_by(project_id=id).delete()
@@ -159,19 +170,28 @@ def delete_project(id):
 		log_entry.user_id = g.user.user_name
 		log_entry.action = "Deleted project " + project.name
 		db.session.add(log_entry)
-		db.session.add(project)
 		db.session.commit()
 
 		flash('Project deleted successfuly.', 'success')
 	else:
 		flash('You do not have the premision to do that.', 'danger')
+		
 	return redirect(url_for('projects'))
 
 # TODO: finish this
 @gen_app.route('/join_project/<id>', methods=['GET'])
 @login_required
 def join_project(id):
-
+	isMember = models.Membership.query.filter(and_(models.Membership.user_name == g.user.user_name, models.Membership.project == id)).count()
+	if isMember > 0:
+		flash('You are already a member', 'danger')
+	else:
+		memship = models.Membership()
+		memship.user_name = g.user.user_name
+		memship.project = id
+		db.session.add(memship)
+		db.session.commit()
+		flash('Welcome to the project', 'success')
 	return redirect(url_for('project_page', id=id))
 
 

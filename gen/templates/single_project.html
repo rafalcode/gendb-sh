@@ -13,15 +13,21 @@
   <thead>
     <tr>
       <th>Username</th>
-      <th>Last Login Date</th>
+      <th>Email</th>
       <th>Options</th>
     </tr>
+		{% for contrib in contribs %}
 		<tr>
-			<td>Example</td>
-			<td>01-01-2014 09:30</td>
-			<td><span class="label label-danger"><i class="fa fa-trash-o"></i></span>   </td>
-		</tr>
-  </thead>
+		<td>{{contrib.user_name}}</td>
+		<td>{{contrib.email}}</td>
+		<td>
+			{% if rows.owner == g.user.user_name %}
+			<span class="label label-danger"><i class="fa fa-trash-o"></i></span>
+			{% endif %}
+		</td>
+	</tr>
+		{% endfor %}
+		  </thead>
   <tbody>
 
 	</tbody>

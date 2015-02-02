@@ -7,6 +7,7 @@ class User(db.Model):
 
 	log_entry				= db.relationship('Log', backref='log', lazy='dynamic')
 	project_owner		= db.relationship('Project', backref='project', lazy='dynamic')
+	memship					= db.relationship('Membership', backref='membership', lazy='dynamic')
 
 	def is_authenticated(self):
 		return True
@@ -56,3 +57,7 @@ class Genotype(db.Model):
 	snp								= db.Column(db.String(45))
 	call							= db.Column(db.String(3))
 	project_id				= db.Column(db.Integer, db.ForeignKey('project.project_id'))
+
+class Membership(db.Model):
+	user_name					= db.Column(db.String(45), db.ForeignKey('user.user_name'),primary_key=True)
+	project						= db.Column(db.Integer, primary_key=True)
