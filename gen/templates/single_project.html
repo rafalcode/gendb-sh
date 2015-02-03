@@ -5,7 +5,7 @@
 	<div class="row">
 		<div class="col-md-6">
 			<a href="{{url_for('join_project', id=rows.project_id)}}" class="btn btn-primary"><i class="fa fa-sign-in"></i> Join</a>
-			<a href="{{url_for('delete_project', id=rows.project_id)}}" class="btn btn-danger"><i class="fa fa-trash-o"></i> Delete</a>
+			{% if rows.owner == g.user.user_name%}<a href="{{url_for('delete_project', id=rows.project_id)}}" class="btn btn-danger"><i class="fa fa-trash-o"></i> Delete</a>{% endif %}
 			<h3>Description</h3>
 			<p>{{rows.description}}</p>
 			<h3>Contributors</h3>
@@ -22,7 +22,7 @@
 		<td>{{contrib.email}}</td>
 		<td>
 			{% if rows.owner == g.user.user_name %}
-			<span class="label label-danger"><i class="fa fa-trash-o"></i></span>
+			<a href="{{url_for('delete_member', user_name=contrib.user_name, id=rows.project_id)}}"><span class="label label-danger"><i class="fa fa-trash-o"></i></span></a>
 			{% endif %}
 		</td>
 	</tr>
@@ -58,6 +58,26 @@
 				<a class="btn btn-success disabled" href=""><i class="fa fa-download"></i> MAP file</a>
 				<a class="btn btn-success" href="{{url_for('download_map', name='file.dat')}}"><i class="fa fa-download"></i> DAT file</a>
 			</div>
+		</div>
+		<div class="col-md-12">
+		
+<h1>Search</h1>
+<hr>
+<div class="row">
+<div class="col-md-6">
+<form action="{{url_for('project_page', id=rows.project_id)}}" method="POST" name="search_project">
+{{form.hidden_tag()}}
+
+  <div class="form-group">
+    <label for="indiv_id">Individual ID </label>
+{{form.indiv_id(type="text", class_="form-control", id="indiv_id")}}
+  </div>
+  <a href="" onClick="document.search_project.submit();return false;" class="btn btn-primary">Search</a>
+
+</form>
+</div>
+</div>
+{% if cnt != -1 %}<p>There are {{cnt}} individuals with that ID.</p>{% endif %}
 		</div>
 	</div>
 </div>

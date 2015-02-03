@@ -13,3 +13,8 @@ class AddProject(Form):
 class LogInForm(Form):
 	username = StringField('username', validators=[Required()])
 	password = PasswordField('password', validators=[Required()])
+
+class SearchProject(Form):
+	indiv_id = StringField('indiv_id')
+	family_id = StringField('family_id')
+	limit = StringField('limit')

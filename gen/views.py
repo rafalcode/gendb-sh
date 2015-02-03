@@ -1,7 +1,7 @@
 from gen import gen_app,models, db, login_manager
 from flask import render_template, flash, redirect, request, url_for, \
 		send_from_directory, g
-from .forms import AddGenotype, AddProject, LogInForm
+from .forms import AddGenotype, AddProject, LogInForm, SearchProject
 from flask.ext.login import login_user, logout_user, current_user, login_required
 from werkzeug import secure_filename
 import os, csv, sys
@@ -101,16 +101,28 @@ def projects():
 
 	return render_template('projects.html', title="Projects", rows=project_list)
 
-@gen_app.route('/projects/<id>')
+@gen_app.route('/projects/<id>', methods=['GET', 'POST'])
 @login_required
 def project_page(id):
+	cnt = -1
+
 	project = models.Project.query.filter_by(project_id=id).one()
 	contribs = models.User.query.join(models.Membership).filter(models.User.user_name == models.Membership.user_name).all()
+
+	form = SearchProject()
+	indiv = models.Individual.query
+
+	if form.validate_on_submit():
+		if form.indiv_id != "":
+			cnt = indiv.filter_by(individual_id=form.indiv_id.data).count()
+	
 
 	return render_template('single_project.html',
 			title=project.name,
 			rows=project,
-			contribs=contribs)
+			contribs=contribs,
+			form=form,
+			cnt=cnt)
 
 @gen_app.route('/add_project', methods=['GET','POST'])
 @login_required
@@ -192,6 +204,19 @@ def join_project(id):
 		db.session.add(memship)
 		db.session.commit()
 		flash('Welcome to the project', 'success')
+	return redirect(url_for('project_page', id=id))
+
+@gen_app.route('/delete_member/<user_name>/<id>', methods=['GET'])
+@login_required
+def delete_member(user_name,id):
+	project = models.Project.query.filter_by(project_id=id).one()
+	if project.owner == g.user.user_name:
+		models.Membership.query.filter(and_(models.Membership.user_name==user_name, models.Membership.project==id)).delete()
+		db.session.commit()
+		flash('User removed from project successfuly', 'success')
+	else:
+		flash('There was an error while trying to remove this user', 'danger')
+
 	return redirect(url_for('project_page', id=id))
 
 
