@@ -31,11 +31,11 @@
         </div>
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
-<!--
-            <li><a href="#">Dashboard</a></li>
-            <li><a href="#">Settings</a></li>
-            <li><a href="#">Profile</a></li>
-            <li><a href="#">Help</a></li>-->
+
+						<li><a href="{{url_for('index')}}">Overview</a></li>
+						<li><a href="{{url_for('projects')}}">Projects</a></li>
+						<li><a href="{{url_for('log_page')}}">Logs</a></li>
+<!--            <li><a href="#">Help</a></li>-->
 						<li class="dropdown">
         <a href="#" class="dropdown-toggle btn-primary" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-user"></i> {{g.user.user_name}}<b class="caret"></b></a>
         <ul class="dropdown-menu">

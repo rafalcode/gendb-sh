@@ -36,7 +36,7 @@ def index():
 	ind_count = models.Individual.query.count()
 	project_count = models.Project.query.count()
 	gen_entr = models.Genotype.query.count()
-	phen_entr = 0
+	phen_entr = models.Phenotype.query.count()
 	return render_template('index.html', 
 			title='Overview',
 			ind_count=ind_count,
@@ -107,7 +107,10 @@ def project_page(id):
 	cnt = -1
 
 	project = models.Project.query.filter_by(project_id=id).one()
-	contribs = models.User.query.join(models.Membership).filter(models.User.user_name == models.Membership.user_name).all()
+	contribs = models.User.query.join(models.Membership).filter(and_(models.User.user_name == models.Membership.user_name, models.Membership.project==id)).all()
+	indivs_proj = models.Individual.query.filter_by(project_id=id).count()
+	genos_proj = models.Genotype.query.filter_by(project_id=id).count()
+	phenos_proj = models.Phenotype.query.filter_by(project_id=id).count()
 
 	form = SearchProject()
 	indiv = models.Individual.query
@@ -122,7 +125,10 @@ def project_page(id):
 			rows=project,
 			contribs=contribs,
 			form=form,
-			cnt=cnt)
+			cnt=cnt,
+			indivs_proj=indivs_proj,
+			genos_proj=genos_proj,
+			phenos_proj=phenos_proj)
 
 @gen_app.route('/add_project', methods=['GET','POST'])
 @login_required
@@ -168,6 +174,8 @@ def delete_project(id):
 		db.session.commit()
 		genotypes = models.Genotype.query.filter_by(project_id=id).delete()
 		db.session.commit()
+		phenotypes = models.Phenotype.query.filter_by(project_id=id).delete()
+		db.session.commit()
 		individuals = models.Individual.query.filter_by(project_id=id).delete()
 		db.session.commit()
 		db.session.delete(project)
@@ -211,6 +219,9 @@ def join_project(id):
 def delete_member(user_name,id):
 	project = models.Project.query.filter_by(project_id=id).one()
 	if project.owner == g.user.user_name:
+		if project.owner ==  user_name:
+			flash("You cannot delete yourself", "info")
+			return redirect(url_for('project_page', id=id))
 		models.Membership.query.filter(and_(models.Membership.user_name==user_name, models.Membership.project==id)).delete()
 		db.session.commit()
 		flash('User removed from project successfuly', 'success')
@@ -280,14 +291,143 @@ def upload_individual():
 	flash("Invalid file", "danger")
 	return redirect(url_for('project_page', id=request.form['id']))
 
-@gen_app.route('/single_pheno', methods=['POST'])
+@gen_app.route('/bulk_pheno', methods=['POST'])
 @login_required
-def single_pheno():
+def bulk_pheno():
+	csv.field_size_limit(sys.maxsize)
+	num_rows = 0
+
+	if request.method == 'POST':
+		bulk_pheno = request.files['bulk_pheno']
+
+		if bulk_pheno and allowed_file(bulk_pheno.filename):
+			filename = secure_filename(bulk_pheno.filename)
+			bulk_pheno.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
+			flash("Phenotype file uploaded successfuly", "success")
+
+			try:
+				with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'rb') as csvfile:
+
+					sr = csv.reader(csvfile, delimiter=' ')
+					header = sr.next()
+					print header
+
+					for row in sr:
+						num_rows = num_rows+1
+						num_cols = len(row)
+						for i in range(1,num_cols):
+							phen = models.Phenotype()
+							phen.individual_id = row[0]
+							phen.name = header[i]
+							phen.value = row[i]
+							phen.project_id = request.form['id']
+							db.session.add(phen)
+						
+					"""
+					Create log entry
+					"""
+					log_entry = models.Log()
+					import time
+					log_entry.timestamp = int(time.time())
+					log_entry.user_id = g.user.user_name
+					log_entry.action = "Upload Phenotype file for project " + request.form['proname']
+					db.session.add(log_entry)
+					"""
+					Commit changes to DB
+					"""
+					db.session.commit()
+
+
+			except exc.IntegrityError, e:
+				try:
+					os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
+				except OSError,e :
+					print str(e)
+				flash(str(e), "danger")
+				return redirect(url_for('project_page', id=request.form['id']))
+			
+			try:
+				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
+			except OSError,e :
+				print str(e)
+			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
+			return redirect(url_for('project_page', id=request.form['id']))
 	
+	flash("Invalid file", "danger")
+	return redirect(url_for('project_page', id=request.form['id']))
+	
+
 	
 	return redirect(url_for('project_page', id=request.form['id']))
 
 
+
+@gen_app.route('/bulk_geno', methods=['POST'])
+@login_required
+def bulk_geno():
+	csv.field_size_limit(sys.maxsize)
+	num_rows = 0
+
+	if request.method == 'POST':
+		bulk_geno = request.files['bulk_geno']
+
+		if bulk_geno and allowed_file(bulk_geno.filename):
+			filename = secure_filename(bulk_geno.filename)
+			bulk_geno.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
+			flash("Genotype file uploaded successfuly", "success")
+
+			try:
+				with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'rb') as csvfile:
+
+					sr = csv.reader(csvfile, delimiter=' ')
+					header = sr.next()
+					print header
+
+					for row in sr:
+						num_rows = num_rows+1
+						num_cols = len(row)
+						for i in range(1,num_cols):
+							gen = models.Genotype()
+							gen.individual_id = row[0]
+							gen.snp = header[i]
+							gen.call = row[i]
+							gen.project_id = request.form['id']
+							db.session.add(gen)
+						
+					"""
+					Create log entry
+					"""
+					log_entry = models.Log()
+					import time
+					log_entry.timestamp = int(time.time())
+					log_entry.user_id = g.user.user_name
+					log_entry.action = "Upload Genotype file for project " + request.form['proname']
+					db.session.add(log_entry)
+					"""
+					Commit changes to DB
+					"""
+					db.session.commit()
+
+
+			except exc.IntegrityError, e:
+				try:
+					os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
+				except OSError,e :
+					print str(e)
+				flash(str(e), "danger")
+				return redirect(url_for('project_page', id=request.form['id']))
+			
+			try:
+				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
+			except OSError,e :
+				print str(e)
+			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
+			return redirect(url_for('project_page', id=request.form['id']))
+	
+	flash("Invalid file", "danger")
+	return redirect(url_for('project_page', id=request.form['id']))
+	
+			
 
 @gen_app.route('/single_geno', methods=['POST'])
 @login_required
@@ -304,7 +444,7 @@ def single_geno():
 			flash("Genotype file uploaded successfully", "success")
 
 			try:
-				with open(gen_app.config['UPLOAD_FOLDER'] + '/' + filename, 'rb') as csvfile:
+				with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'rb') as csvfile:
 					sr = csv.reader(csvfile, delimiter=' ')
 
 					for row in sr:
@@ -488,14 +628,14 @@ def download_ped(project_id, filename):
 					# check if child or parent
 					if row[-1] == '3':
 						if tiny_stack[1] == base_str+'1':
-							writer.writerow([base_str+'2']+['0']+['0'])
+							writer.writerow([int(row.split('_')[2])]+ [base_str+'2']+['0']+['0'])
 						elif tiny_stack[1] == base_str+'2':
 							print "do nothing"
 						else:
-							writer.writerow([base_str+'1']+['0']+['0'])
-							writer.writerow([base_str+'2']+['0']+['0'])
+							writer.writerow([int(row.split('_')[2])]+ [base_str+'1']+['0']+['0'])
+							writer.writerow([int(row.split('_')[2])]+ [base_str+'2']+['0']+['0'])
 					elif row[-1] == '2' and tiny_stack[1] != base_str+'1':
-							writer.writerow([base_str+'1']+['0']+['0'])
+							writer.writerow([int(row.split('_')[2])]+[base_str+'1']+['0']+['0'])
 				
 					c = []
 
@@ -508,7 +648,7 @@ def download_ped(project_id, filename):
 						par_1 = base_str+'1'
 						par_2 = base_str+'2'
 
-					z = [] + [row] + [par_1] + [par_2] + c
+					z = [] + [int(row.split('_')[2])] + [row] + [par_1] + [par_2] + c
 					writer.writerow(z)
 
 			except KeyError, e:
@@ -541,10 +681,15 @@ def download_map(name):
 
 
 @gen_app.route('/log')
+@gen_app.route('/log/page/<int:page>')
 @login_required
-def log_page():
-	log = models.Log.query.all()
+def log_page(page=1):
+	try:
+		log = models.Log.query.order_by(models.Log.timestamp.desc()).paginate(page, per_page=15)
+	except exc.OperationalError:
+		flash("No logs found", "info")
+		log = None
 	import datetime
-	for row in log:
+	for row in log.items:
 		row.timestamp = datetime.datetime.fromtimestamp(int(row.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
 	return render_template('log.html', title="Logs",rows=log)

@@ -11,7 +11,7 @@
         </tr>
       </thead>
       <tbody>
-			{% for row in rows %}
+			{% for row in rows.items %}
 			<tr>
 				<td>{{row.timestamp}}</td>
 				<td>{{row.user_id}}</td>
@@ -21,7 +21,31 @@
 			{% endfor %}
       </tbody>
     </table>
+<ul class="pagination" >
+    <!-- previous page -->
+    {% if rows.has_prev %}
+	<li><a href="{{ url_for('log_page', page=rows.prev_num) }}">«</a></li>
+    {% endif %}
 
+    <!-- all page numbers -->
+    {% for page_num in rows.iter_pages() %}
+      {% if page_num %}
+        {% if page_num != rows.page %}
+		<li><a href="{{ url_for('log_page', page=page_num) }}">{{ page_num }}</a></li>
+        {% else %}
+		<li class="active"><a href="#">{{ page_num }}</a></li>
+      	{% endif %}
+      {% else %}
+			<li class="disabled"><span class="ellipsis" style="white-space: nowrpap; overflow: hidden; text-overflow: ellipsis">…</span></li>
+      {% endif %}
+    {% endfor %}
+
+    <!-- next page -->
+    {% if rows.has_next %}
+	<li><a href="{{ url_for('log_page', page=rows.next_num) }}">»</a></li>
+    {% endif %}
+
+  </ul>
 
 	</div>
 {% endblock %}

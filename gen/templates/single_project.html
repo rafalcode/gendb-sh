@@ -9,7 +9,7 @@
 			<h3>Description</h3>
 			<p>{{rows.description}}</p>
 			<h3>Contributors</h3>
-<table class="table table-striped table-hover ">
+<table class="table table-striped table-hover table-bordered">
   <thead>
     <tr>
       <th>Username</th>
@@ -34,7 +34,50 @@
 </table>
 		</div>
 		<div class="col-md-6">
-			<form role="form" action="{{url_for('upload_individual')}}" method=post enctype=multipart/form-data class="well">
+<div class="panel panel-default">
+				<div class="panel-heading">
+				Stats
+			</div>
+			<div class="panel-body">
+
+			<span class="label label-warning">{{indivs_proj}} individuals</span>
+				<span class="label label-warning">{{genos_proj}} genotypes</span>
+				<span class="label label-warning">{{phenos_proj}} phenotypes</span>
+
+			</div>
+		</div>
+
+			<div class="panel panel-default">
+				<div class="panel-heading">
+				Upload
+			</div>
+			<div class="panel-body">
+<button type="button" class="btn btn-success" data-toggle="modal" data-target="#indiv_modal">
+	<i class="fa fa-upload"></i> Individuals
+</button>
+<button type="button" class="btn btn-success" data-toggle="modal" data-target="#geno_modal">
+	<i class="fa fa-upload"></i> Genotype
+</button>
+<button type="button" class="btn btn-success" data-toggle="modal" data-target="#pheno_modal">
+	<i class="fa fa-upload"></i> Phenotype
+</button>
+<button type="button" class="btn btn-success" data-toggle="modal" data-target="#map_modal">
+	<i class="fa fa-upload"></i> Map
+</button>
+<button type="button" class="btn btn-success" data-toggle="modal" data-target="#dat_modal">
+	<i class="fa fa-upload"></i> Dat
+</button>
+</div>
+			</div>
+			<div class="modal fade" id="indiv_modal" tabindex="-1" role="dialog" aria-labelledby="indiv_label" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+					<div class="modal-header">
+<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="indiv_label">Upload Individuals File</h4>
+					</div>
+					<div class="modal-body">
+			<form role="form" action="{{url_for('upload_individual')}}" method=post enctype=multipart/form-data>
 				<div class="form-group">
 					<label for="pedFile">Individuals file</label>
 					<input type="file" name="individuals">
@@ -43,6 +86,18 @@
 				</div>
 				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
 			</form>
+		</div>
+	</div>
+</div>
+		</div>
+<div class="modal fade" id="geno_modal" tabindex="-1" role="dialog" aria-labelledby="indiv_label" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+					<div class="modal-header">
+<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="indiv_label">Upload Genotype File</h4>
+					</div>
+					<div class="modal-body">
 			<form role="form" action="{{url_for('single_geno')}}" method=post enctype=multipart/form-data class="well">
 				<div class="form-group">
 					<label for="mapFile">Single genotype  file</label>
@@ -53,11 +108,74 @@
 				</div>
 				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
 			</form>
-			<div class="well">
+			<form role="form" action="{{url_for('bulk_geno')}}" method=post enctype=multipart/form-data class="well">
+				<div class="form-group">
+					<label for="mapFile">Bulk genotype  file</label>
+					<input type="file" name="bulk_geno">
+					<input type="hidden" name="id" value="{{rows.project_id}}">
+					<input type="hidden" name="proname" value="{{rows.name}}">
+
+				</div>
+				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
+			</form>
+		</div>
+	</div>
+</div>
+</div>
+<div class="modal fade" id="pheno_modal" tabindex="-1" role="dialog" aria-labelledby="indiv_label" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+					<div class="modal-header">
+<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="indiv_label">Upload Phenotype	File</h4>
+					</div>
+					<div class="modal-body">
+
+			<form role="form" action="{{url_for('bulk_pheno')}}" method=post enctype=multipart/form-data class="well">
+				<div class="form-group">
+					<label for="mapFile">Bulk phenotype  file</label>
+					<input type="file" name="bulk_pheno">
+					<input type="hidden" name="id" value="{{rows.project_id}}">
+					<input type="hidden" name="proname" value="{{rows.name}}">
+
+				</div>
+				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
+			</form>
+		</div>
+	</div>
+</div>
+</div>
+<div class="modal fade" id="map_modal" tabindex="-1" role="dialog" aria-labelledby="indiv_label" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+					<div class="modal-header">
+<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="indiv_label">Upload Map File</h4>
+					</div>
+					<div class="modal-body">
+
+			<form role="form" action="{{url_for('bulk_geno')}}" method=post enctype=multipart/form-data class="well">
+				<div class="form-group">
+					<label for="mapFile">MAP file</label>
+					<input type="file" name="map_file">
+					<input type="hidden" name="id" value="{{rows.project_id}}">
+					<input type="hidden" name="proname" value="{{rows.name}}">
+
+				</div>
+				<button type="submit" class="btn btn-success disabled"><i class="fa fa-upload"></i> Upload</button>
+			</form>
+		</div>
+	</div>
+</div>
+</div>
+			<div class="panel panel-default">
+				<div class="panel-heading">Download</div>
+				<div class="panel-body">
 				<a class="btn btn-success" href="{{url_for('download_ped', project_id=rows.project_id, filename='file.ped')}}"><i class="fa fa-download"></i> PED file</a>
 				<a class="btn btn-success disabled" href=""><i class="fa fa-download"></i> MAP file</a>
 				<a class="btn btn-success" href="{{url_for('download_map', name='file.dat')}}"><i class="fa fa-download"></i> DAT file</a>
 			</div>
+		</div>
 		</div>
 		<div class="col-md-12">
 		

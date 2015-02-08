@@ -34,6 +34,7 @@ class Project(db.Model):
 	description				= db.Column(db.String(500))
 	individual				= db.relationship('Individual', backref='individual', lazy='dynamic')
 	genotype					= db.relationship('Genotype', backref='genotype_project', lazy='dynamic')
+	phenotype					= db.relationship('Phenotype', backref='phenotype_project', lazy='dynamic')
 	owner							= db.Column(db.String(45), db.ForeignKey('user.user_name'))
 	
 
@@ -56,6 +57,13 @@ class Genotype(db.Model):
 	individual_id			= db.Column(db.String(45), db.ForeignKey('individual.new_id'))
 	snp								= db.Column(db.String(45))
 	call							= db.Column(db.String(3))
+	project_id				= db.Column(db.Integer, db.ForeignKey('project.project_id'))
+
+class Phenotype(db.Model):
+	phenotype_id			= db.Column(db.Integer, primary_key=True)
+	individual_id			= db.Column(db.String(45), db.ForeignKey('individual.new_id'))
+	name							= db.Column(db.String(45))
+	value							= db.Column(db.String(45))
 	project_id				= db.Column(db.Integer, db.ForeignKey('project.project_id'))
 
 class Membership(db.Model):
