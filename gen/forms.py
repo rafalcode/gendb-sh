@@ -1,5 +1,5 @@
 from flask.ext.wtf import Form
-from wtforms import StringField, BooleanField, TextAreaField, PasswordField
+from wtforms import StringField, BooleanField, TextAreaField, PasswordField, SubmitField
 from wtforms.validators import Required
 
 class AddGenotype(Form):
@@ -18,3 +18,6 @@ class SearchProject(Form):
 	indiv_id = StringField('indiv_id')
 	family_id = StringField('family_id')
 	limit = StringField('limit')
+
+class HardyButton(Form):
+	btn = SubmitField('hardy')

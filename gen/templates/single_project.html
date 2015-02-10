@@ -193,9 +193,26 @@
   <a href="" onClick="document.search_project.submit();return false;" class="btn btn-primary">Search</a>
 
 </form>
+<form action="{{url_for('project_page', id=rows.project_id)}}" method="POST" name="hardy_form">
+{{form.hidden_tag()}}
+
+  <div class="form-group">
+    <label for="indiv_id">Individual ID </label>
+{{hardy.btn(class_="btn btn-default", id="btn_hardy")}}
+  </div>
+
+</form>
 </div>
 </div>
 {% if cnt != -1 %}<p>There are {{cnt}} individuals with that ID.</p>{% endif %}
+{% if hardy_data %}<samp>{% for line in hardy_data %}
+	{{line}}<br>
+{% endfor %}
+	
+</samp>
+	
+	
+	{% endif %}
 		</div>
 	</div>
 </div>

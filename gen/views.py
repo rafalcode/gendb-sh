@@ -1,7 +1,7 @@
 from gen import gen_app,models, db, login_manager
 from flask import render_template, flash, redirect, request, url_for, \
 		send_from_directory, g
-from .forms import AddGenotype, AddProject, LogInForm, SearchProject
+from .forms import AddGenotype, AddProject, LogInForm, SearchProject, HardyButton
 from flask.ext.login import login_user, logout_user, current_user, login_required
 from werkzeug import secure_filename
 import os, csv, sys
@@ -113,22 +113,32 @@ def project_page(id):
 	phenos_proj = models.Phenotype.query.filter_by(project_id=id).count()
 
 	form = SearchProject()
+	hardyBtn = HardyButton()
 	indiv = models.Individual.query
+
+	lel = None
 
 	if form.validate_on_submit():
 		if form.indiv_id != "":
 			cnt = indiv.filter_by(individual_id=form.indiv_id.data).count()
-	
+	if hardyBtn.validate_on_submit():
+		print "keke"
+		from subprocess import check_output
+		lel = check_output(["ls", "-l"])
+		lel = lel.split('\n')
+
 
 	return render_template('single_project.html',
 			title=project.name,
 			rows=project,
 			contribs=contribs,
 			form=form,
+			hardy=hardyBtn,
 			cnt=cnt,
 			indivs_proj=indivs_proj,
 			genos_proj=genos_proj,
-			phenos_proj=phenos_proj)
+			phenos_proj=phenos_proj,
+			hardy_data=lel)
 
 @gen_app.route('/add_project', methods=['GET','POST'])
 @login_required
