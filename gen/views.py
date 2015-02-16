@@ -123,9 +123,16 @@ def project_page(id):
 			cnt = indiv.filter_by(individual_id=form.indiv_id.data).count()
 	if hardyBtn.validate_on_submit():
 		print "keke"
-		from subprocess import check_output
-		lel = check_output(["ls", "-l"])
-		lel = lel.split('\n')
+		print gen_ped(id)
+		print gen_map(id)
+		from subprocess import check_output, CalledProcessError
+		try:
+			lel = check_output(["/cs/home/vt3/SHproject/plink", "--noweb "],  shell=True)
+
+			lel = lel.split('\n')
+		except CalledProcessError, e:
+			print e
+
 
 
 	return render_template('single_project.html',
@@ -512,7 +519,7 @@ def download_ped(project_id, filename):
 	gens_list = {}
 	ordered_ind = []
 
-	ind = models.Individual.query.order_by(models.Individual.new_id.asc()).all()
+	ind = models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).all()
 	for row in ind:
 		ordered_ind.append(row.new_id)
 		final_out[row.new_id] = []
@@ -522,7 +529,7 @@ def download_ped(project_id, filename):
 		gens_list[row.snp] = [row.snp]
 
 	for i in gens_list:
-		current_gen = models.Genotype.query.order_by().filter(models.Genotype.snp == i).all()
+		current_gen = models.Genotype.query.filter_by(project_id=project_id).order_by().filter(models.Genotype.snp == i).all()
 		for row in current_gen:
 			final_out[row.individual_id] += [row.call]
 	
@@ -668,25 +675,210 @@ def download_ped(project_id, filename):
 		#writer.writerow(row)
 	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename=filename)
 
-@gen_app.route('/download_map/<name>')
-@login_required
-def download_map(name):
+def gen_ped(project_id):
+	filename = "random"
+
+	final_out = {}
+	gens_list = {}
+	ordered_ind = []
+
+	ind = models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).all()
+	for row in ind:
+		ordered_ind.append(row.new_id)
+		final_out[row.new_id] = []
+	
+	gens = models.Genotype.query.all()
+	for row in gens:
+		gens_list[row.snp] = [row.snp]
+
+	for i in gens_list:
+		current_gen = models.Genotype.query.filter_by(project_id=project_id).order_by().filter(models.Genotype.snp == i).all()
+		for row in current_gen:
+			final_out[row.individual_id] += [row.call]
+	
+	new_final_out = {}
+	for row in final_out:
+		if final_out[row] != []:
+			new_final_out[row] = final_out[row]
+	
+
+	with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'w+') as f:
+		writer = csv.writer(f, delimiter=',')
+		final_line = []
+		for i in ind:
+			final_line.append([i.new_id])
+
+		for column in range(len(gens_list)):
+			A = False
+			C = False
+			G = False
+			T = False
+			X = False
+
+			for row in new_final_out:
+				if new_final_out[row] != []:
+					spl = new_final_out[row][column].split("/")
+					if spl[0] == "A" or spl[1] == "A":
+						A = True
+					if spl[0] == "C" or spl[1] == "C":
+						C = True
+					if spl[0] == "G" or spl[1] == "G":
+						G = True
+					if spl[0] == "T" or spl[1] == "T":
+						T = True
+					#elif spl[0] == "X" or spl[2] == "X":
+					#	X = True
+
+			lol = 0
+			for row in new_final_out:
+				if new_final_out[row] != []:
+					fr = ""
+					sn = ""
+					if A and G:
+						if new_final_out[row][column] == "A/G":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "A/A":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "G/G":
+							fr = sn = "2"
+					elif A and C:
+						if new_final_out[row][column] == "A/C":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "A/A":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "C/C":
+							fr = sn = "2"
+					elif A and T:
+						if new_final_out[row][column] == "A/T":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "A/A":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "T/T":
+							fr = n = "2"
+					elif C and G:
+						if new_final_out[row][column] == "C/G":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "C/C":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "G/G":
+							fr = sn = "2"
+					elif C and T:
+						if new_final_out[row][column] == "C/T":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "C/C":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "T/T":
+							fr = sn = "2"
+					elif G and T:
+						if new_final_out[row][column] == "G/T":
+							fr = "1"
+							sn = "2"
+						elif new_final_out[row][column] == "G/G":
+							fr = sn = "1"
+						elif new_final_out[row][column] == "T/T":
+							fr = sn = "2"
+					elif X:
+						fr = sn = "X"
+					new_final_out[row][column] = fr+','+sn
+					lol += 1
+
+
+		# a stack used to keep track of previously encountered IDs
+		tiny_stack = ['0','0','0']
+
+		for row in ordered_ind:
+			#TODO That's dirty: you are expecting to catch
+			# an exception in the if in order to skip a missing entry. FIX IT!1!!!11	
+			try:
+				if new_final_out[row] != []:
+
+					# shift down the stack
+					tiny_stack[0] = tiny_stack[1]
+					tiny_stack[1] = tiny_stack[2]
+					tiny_stack[2] = row
+
+					# base of the ID
+					base_str = row[:-1]
+
+					# check if child or parent
+					if row[-1] == '3':
+						if tiny_stack[1] == base_str+'1':
+							writer.writerow([int(row.split('_')[2])]+ [base_str+'2']+['0']+['0'])
+						elif tiny_stack[1] == base_str+'2':
+							print "do nothing"
+						else:
+							writer.writerow([int(row.split('_')[2])]+ [base_str+'1']+['0']+['0'])
+							writer.writerow([int(row.split('_')[2])]+ [base_str+'2']+['0']+['0'])
+					elif row[-1] == '2' and tiny_stack[1] != base_str+'1':
+							writer.writerow([int(row.split('_')[2])]+[base_str+'1']+['0']+['0'])
+				
+					c = []
+
+					for column in range(len(gens_list)):
+						c += new_final_out[row][column].split(',')
+
+					par_1 = 0
+					par_2 = 0
+					if int(row[-1]) > 2:
+						par_1 = base_str+'1'
+						par_2 = base_str+'2'
+
+					z = [] + [int(row.split('_')[2])] + [row] + [par_1] + [par_2] + c
+					writer.writerow(z)
+
+			except KeyError, e:
+				tmeptemptemp = 1+1
+		#print final_out
+		#row = [] + [str(row.individual_id)] + [str(row.new_id)] + [fr] + [sn]
+		#writer.writerow(row)
+	return filename
+
+def gen_map(project_id):
+	filename = "random2"
 	from sqlalchemy import distinct
-	geno = models.Genotype.query.all()
+	geno = models.Genotype.query.filter_by(project_id=project_id).all()
 	darn = {}
 
 	for row in geno:
 		darn[row.snp] = row.snp
 
 
-	with open(gen_app.config['UPLOAD_FOLDER'] + name, 'w+') as f:
+	with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'w+') as f:
 		writer = csv.writer(f, delimiter=',')
 
 		for row in darn:
 			r = [] + ["M"] + [darn[row]]
 			writer.writerow(r)
 	
-	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename=name)
+	return filename
+
+
+
+
+@gen_app.route('/download_map/<int:project_id>/<path:filename>', methods=['GET'])
+@login_required
+def download_map(filename,project_id):
+	from sqlalchemy import distinct
+	geno = models.Genotype.query.filter_by(project_id=project_id).all()
+	darn = {}
+
+	for row in geno:
+		darn[row.snp] = row.snp
+
+
+	with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'w+') as f:
+		writer = csv.writer(f, delimiter=',')
+
+		for row in darn:
+			r = [] + ["M"] + [darn[row]]
+			writer.writerow(r)
+	
+	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename=filename)
 
 
 
