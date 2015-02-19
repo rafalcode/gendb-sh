@@ -127,7 +127,7 @@ def project_page(id):
 		print gen_map(id)
 		from subprocess import check_output, CalledProcessError
 		try:
-			lel = check_output(["/cs/home/vt3/SHproject/plink", "--noweb "],  shell=True)
+			lel = check_output(["/cs/home/vt3/SHproject/plink", "--help"])  
 
 			lel = lel.split('\n')
 		except CalledProcessError, e:
@@ -517,14 +517,25 @@ def download_ped(project_id, filename):
 	
 	final_out = {}
 	gens_list = {}
+	phen_list = {}
 	ordered_ind = []
+
+	phens = db.engine.execute('SELECT name FROM phenotype group by name;')
+	for p in phens:
+		temp= models.Phenotype.query.filter(and_(project_id==project_id,models.Phenotype.name==p.name)).all()
+		for row in temp:
+			try:
+				phen_list[row.individual_id].append(row.value)
+			except KeyError:
+				phen_list[row.individual_id] = [row.value]
+	
 
 	ind = models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).all()
 	for row in ind:
 		ordered_ind.append(row.new_id)
 		final_out[row.new_id] = []
 	
-	gens = models.Genotype.query.all()
+	gens = models.Genotype.query.filter_by(project_id=project_id).all()
 	for row in gens:
 		gens_list[row.snp] = [row.snp]
 
@@ -665,7 +676,7 @@ def download_ped(project_id, filename):
 						par_1 = base_str+'1'
 						par_2 = base_str+'2'
 
-					z = [] + [int(row.split('_')[2])] + [row] + [par_1] + [par_2] + c
+					z = [] + [int(row.split('_')[2])] + [row] + [par_1] + [par_2] + c + phen_list[row]
 					writer.writerow(z)
 
 			except KeyError, e:
