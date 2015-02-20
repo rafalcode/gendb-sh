@@ -35,6 +35,7 @@ class Project(db.Model):
 	individual				= db.relationship('Individual', backref='individual', lazy='dynamic')
 	genotype					= db.relationship('Genotype', backref='genotype_project', lazy='dynamic')
 	phenotype					= db.relationship('Phenotype', backref='phenotype_project', lazy='dynamic')
+	Group							= db.relationship('Group', backref='group_project', lazy='dynamic')
 	owner							= db.Column(db.String(45), db.ForeignKey('user.user_name'))
 	
 
@@ -69,3 +70,9 @@ class Phenotype(db.Model):
 class Membership(db.Model):
 	user_name					= db.Column(db.String(45), db.ForeignKey('user.user_name'),primary_key=True)
 	project						= db.Column(db.Integer, primary_key=True)
+
+class Group(db.Model):
+	group_id					= db.Column(db.Integer, primary_key=True)
+	name							= db.Column(db.String(45))
+	indiv_list				= db.Column(db.Text)
+	project_id				= db.Column(db.Integer, db.ForeignKey('project.project_id'))

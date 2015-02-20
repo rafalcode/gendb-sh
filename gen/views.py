@@ -111,6 +111,7 @@ def project_page(id):
 	indivs_proj = models.Individual.query.filter_by(project_id=id).count()
 	genos_proj = models.Genotype.query.filter_by(project_id=id).count()
 	phenos_proj = models.Phenotype.query.filter_by(project_id=id).count()
+	groups = models.Group.query.filter_by(project_id=id).all()
 
 	form = SearchProject()
 	hardyBtn = HardyButton()
@@ -145,7 +146,8 @@ def project_page(id):
 			indivs_proj=indivs_proj,
 			genos_proj=genos_proj,
 			phenos_proj=phenos_proj,
-			hardy_data=lel)
+			hardy_data=lel,
+			groups=groups)
 
 @gen_app.route('/add_project', methods=['GET','POST'])
 @login_required
@@ -194,6 +196,8 @@ def delete_project(id):
 		phenotypes = models.Phenotype.query.filter_by(project_id=id).delete()
 		db.session.commit()
 		individuals = models.Individual.query.filter_by(project_id=id).delete()
+		db.session.commit()
+		groups = models.Group.query.filter_by(project_id=id).delete()
 		db.session.commit()
 		db.session.delete(project)
 		db.session.commit()
@@ -247,6 +251,54 @@ def delete_member(user_name,id):
 
 	return redirect(url_for('project_page', id=id))
 
+@gen_app.route('/upload_group', methods=['POST'])
+@login_required
+def upload_group():
+	csv.field_size_limit(sys.maxsize)
+	ind_list = []
+
+	if request.method == 'POST':
+		group_file = request.files['group']
+
+		if group_file and allowed_file(group_file.filename):
+			print request.form['name']
+			filename = secure_filename(group_file.filename)
+			group_file.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
+
+			try:
+				with open(gen_app.config['UPLOAD_FOLDER'] + '/' + filename, 'rb') as csvfile:
+					sr = csv.reader(csvfile, delimiter=' ')
+
+					for row in sr:
+						ind_list.append(row[0])
+						if len(row) != 1:
+							flash("Invalid file format", "danger")
+							return redirect(url_for('project_page', id=request.form['id']))
+
+				group_entry = models.Group()
+
+				group_entry.name = request.form['name']
+				group_entry.indiv_list =  ",".join(ind_list)
+				group_entry.project_id = request.form['id']
+				db.session.add(group_entry)
+				db.session.commit()
+
+			except exc.IntegrityError, e:
+				try:
+					os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' + filename)
+				except OSError, e:
+					print str(e)
+
+			try:
+				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
+			except OSError,e :
+				print str(e)
+			flash("File successfully parsed.", "success")
+			return redirect(url_for('project_page', id=request.form['id']))
+
+	flash("Invalid file", "danger")
+	return redirect(url_for('project_page', id=request.form['id']))
+
 
 @gen_app.route('/upload_individual', methods=['POST'])
 @login_required
@@ -295,8 +347,8 @@ def upload_individual():
 					os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
 				except OSError,e :
 					print str(e)
-				flash(str(e), "danger")
-				return redirect(url_for('project_page', id=request.form['id']))
+					flash(str(e), "danger")
+					return redirect(url_for('project_page', id=request.form['id']))
 
 			try:
 				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
@@ -511,7 +563,7 @@ def single_geno():
 	flash("Invalid file", "danger")
 	return redirect(url_for('project_page', id=request.form['id']))
 
-@gen_app.route('/download_ped/<int:project_id>/<path:filename>', methods=['GET'])
+@gen_app.route('/download_ped/<int:project_id>/<path:filename>', methods=['POST'])
 @login_required
 def download_ped(project_id, filename):
 	
@@ -520,9 +572,15 @@ def download_ped(project_id, filename):
 	phen_list = {}
 	ordered_ind = []
 
+	grp = request.form['group']
+
+	group = models.Group.query.filter_by(group_id=grp).all()
+	group_list = group[0].indiv_list.split(",")
+	print group_list
+
 	phens = db.engine.execute('SELECT name FROM phenotype group by name;')
 	for p in phens:
-		temp= models.Phenotype.query.filter(and_(project_id==project_id,models.Phenotype.name==p.name)).all()
+		temp= models.Phenotype.query.filter(and_(project_id==project_id,models.Phenotype.name==p.name,models.Phenotype.individual_id.in_(group_list))).all()
 		for row in temp:
 			try:
 				phen_list[row.individual_id].append(row.value)
@@ -530,17 +588,17 @@ def download_ped(project_id, filename):
 				phen_list[row.individual_id] = [row.value]
 	
 
-	ind = models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).all()
+	ind = models.Individual.query.filter(and_(project_id==project_id,models.Individual.new_id.in_(group_list))).order_by(models.Individual.new_id.asc()).all()
 	for row in ind:
 		ordered_ind.append(row.new_id)
 		final_out[row.new_id] = []
 	
-	gens = models.Genotype.query.filter_by(project_id=project_id).all()
+	gens = models.Genotype.query.filter(and_(project_id==project_id,models.Genotype.individual_id.in_(group_list))).all()
 	for row in gens:
 		gens_list[row.snp] = [row.snp]
 
 	for i in gens_list:
-		current_gen = models.Genotype.query.filter_by(project_id=project_id).order_by().filter(models.Genotype.snp == i).all()
+		current_gen = models.Genotype.query.filter(and_(project_id==project_id,models.Genotype.individual_id.in_(group_list))).order_by().filter(models.Genotype.snp == i).all()
 		for row in current_gen:
 			final_out[row.individual_id] += [row.call]
 	
@@ -874,7 +932,6 @@ def gen_map(project_id):
 @gen_app.route('/download_map/<int:project_id>/<path:filename>', methods=['GET'])
 @login_required
 def download_map(filename,project_id):
-	from sqlalchemy import distinct
 	geno = models.Genotype.query.filter_by(project_id=project_id).all()
 	darn = {}
 
