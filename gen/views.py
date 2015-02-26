@@ -574,13 +574,15 @@ def download_ped(project_id, filename):
 
 	grp = request.form['group']
 
-	group = models.Group.query.filter_by(group_id=grp).all()
-	group_list = group[0].indiv_list.split(",")
-	print group_list
+	if grp == "ALL":
+		group_list = db.engine.execute("SELECT new_id FROM individual where project_id='"+ str(project_id)+"';")
+	else:
+		group = models.Group.query.filter_by(group_id=grp).all()
+		group_list = group[0].indiv_list.split(",")
 
 	phens = db.engine.execute('SELECT name FROM phenotype group by name;')
 	for p in phens:
-		temp= models.Phenotype.query.filter(and_(project_id==project_id,models.Phenotype.name==p.name,models.Phenotype.individual_id.in_(group_list))).all()
+		temp= models.Phenotype.query.filter(and_(project_id==project_id,models.Phenotype.name==p.name)).all()
 		for row in temp:
 			try:
 				phen_list[row.individual_id].append(row.value)
@@ -588,17 +590,17 @@ def download_ped(project_id, filename):
 				phen_list[row.individual_id] = [row.value]
 	
 
-	ind = models.Individual.query.filter(and_(project_id==project_id,models.Individual.new_id.in_(group_list))).order_by(models.Individual.new_id.asc()).all()
+	ind = models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).all()
 	for row in ind:
 		ordered_ind.append(row.new_id)
 		final_out[row.new_id] = []
 	
-	gens = models.Genotype.query.filter(and_(project_id==project_id,models.Genotype.individual_id.in_(group_list))).all()
+	gens = models.Genotype.query.filter_by(project_id=project_id).all()
 	for row in gens:
 		gens_list[row.snp] = [row.snp]
 
 	for i in gens_list:
-		current_gen = models.Genotype.query.filter(and_(project_id==project_id,models.Genotype.individual_id.in_(group_list))).order_by().filter(models.Genotype.snp == i).all()
+		current_gen = models.Genotype.query.filter_by(project_id=project_id).order_by().filter(models.Genotype.snp == i).all()
 		for row in current_gen:
 			final_out[row.individual_id] += [row.call]
 	
@@ -701,7 +703,7 @@ def download_ped(project_id, filename):
 			#TODO That's dirty: you are expecting to catch
 			# an exception in the if in order to skip a missing entry. FIX IT!1!!!11	
 			try:
-				if new_final_out[row] != []:
+				if new_final_out[row] != [] and row in group_list:
 
 					# shift down the stack
 					tiny_stack[0] = tiny_stack[1]
