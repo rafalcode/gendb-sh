@@ -50,6 +50,7 @@ class Individual(db.Model):
 	old_id						= db.Column(db.String(30))
 	new_id						= db.Column(db.String(30), primary_key=True)
 	project_id				= db.Column(db.Integer, db.ForeignKey('project.project_id'))
+	gender						= db.Column(db.Integer)
 	genotype					= db.relationship('Genotype', backref='genotype_individual', lazy='dynamic')
 
 class Genotype(db.Model):

@@ -4,8 +4,15 @@
 <div class="col-md-12">
 	<div class="row">
 		<div class="col-md-6">
-			<a href="{{url_for('join_project', id=rows.project_id)}}" class="btn btn-primary"><i class="fa fa-sign-in"></i> Join</a>
-			{% if rows.owner == g.user.user_name%}<a href="{{url_for('delete_project', id=rows.project_id)}}" class="btn btn-danger"><i class="fa fa-trash-o"></i> Delete</a>{% endif %}
+			
+			{% if rows.owner == g.user.user_name%}			
+			<button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete">
+	<i class="fa fa-trash-o"></i> Delete
+</button>
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addmem">
+	<i class="fa fa-user"></i> Add Member
+</button>
+			{% endif %}
 			<h3>Description</h3>
 			<p>{{rows.description}}</p>
 			<h3>Contributors</h3>
@@ -77,16 +84,16 @@
 <button type="button" class="btn btn-success" data-toggle="modal" data-target="#indiv_modal">
 	<i class="fa fa-upload"></i> Individuals
 </button>
-<button type="button" class="btn btn-success" data-toggle="modal" data-target="#geno_modal">
+<button type="button" class="btn btn-success {% if indivs_proj == 0 %}disabled{% endif %} " data-toggle="modal" data-target="#geno_modal">
 	<i class="fa fa-upload"></i> Genotype
 </button>
-<button type="button" class="btn btn-success" data-toggle="modal" data-target="#pheno_modal">
+<button type="button" class="btn btn-success {% if indivs_proj == 0 %}disabled{% endif %} " data-toggle="modal" data-target="#pheno_modal">
 	<i class="fa fa-upload"></i> Phenotype
 </button>
-<button type="button" class="btn btn-success" data-toggle="modal" data-target="#map_modal">
+<button type="button" class="btn btn-success disabled" data-toggle="modal" data-target="#map_modal">
 	<i class="fa fa-upload"></i> Map
 </button>
-<button type="button" class="btn btn-success" data-toggle="modal" data-target="#dat_modal">
+<button type="button" class="btn btn-success disabled" data-toggle="modal" data-target="#dat_modal">
 	<i class="fa fa-upload"></i> Dat
 </button>
 </div>
@@ -102,6 +109,7 @@
 			<form role="form" action="{{url_for('upload_individual')}}" method=post enctype=multipart/form-data>
 				<div class="form-group">
 					<label for="pedFile">Individuals file</label>
+					<p>A file with 2 columns: ID, Gender</p>
 					<input type="file" name="individuals">
 					<input type="hidden" name="id" value="{{rows.project_id}}">
 					<input type="hidden" name="proname" value="{{rows.name}}">
@@ -123,6 +131,7 @@
 			<form role="form" action="{{url_for('single_geno')}}" method=post enctype=multipart/form-data class="well">
 				<div class="form-group">
 					<label for="mapFile">Single genotype  file</label>
+					<p>A .csv file with 3 columns: ID, SNP, Call</p>
 					<input type="file" name="single_geno">
 					<input type="hidden" name="id" value="{{rows.project_id}}">
 					<input type="hidden" name="proname" value="{{rows.name}}">
@@ -130,6 +139,7 @@
 				</div>
 				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
 			</form>
+			<!--
 			<form role="form" action="{{url_for('bulk_geno')}}" method=post enctype=multipart/form-data class="well">
 				<div class="form-group">
 					<label for="mapFile">Bulk genotype  file</label>
@@ -140,7 +150,48 @@
 				</div>
 				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
 			</form>
+-->
 		</div>
+	</div>
+</div>
+</div>
+<div class="modal fade" id="delete" tabindex="-1" role="dialog" aria-labelledby="indiv_label" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+					<div class="modal-header">
+<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="indiv_label">Are you sure you want to delete this project?</h4>
+				<p>This cannot be undone</p>
+					</div>
+					<div class="modal-body">
+						<button class="btn btn-primary" data-dismiss="modal"> Cancel</button>
+<a href="{{url_for('delete_project', id=rows.project_id)}}" class="btn btn-danger"><i class="fa fa-trash-o"></i> Yes</a>
+			
+
+				</div>
+	</div>
+</div>
+</div>
+<div class="modal fade" id="addmem" tabindex="-1" role="dialog" aria-labelledby="indiv_label" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+					<div class="modal-header">
+<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="indiv_label"></h4>
+				<p>Write the username of the member you want to add and click Add.</p>
+					</div>
+					<div class="modal-body">
+						<form role="form" action="{{url_for('add_member', proj_id=rows.project_id)}}" method=post>
+				<div class="form-group">
+					<label for="userName">Username</label>
+					<input type="text" class="form-control" name="username">
+				</div>
+				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Add</button>
+			</form>		
+						
+			
+
+				</div>
 	</div>
 </div>
 </div>
@@ -156,6 +207,7 @@
 			<form role="form" action="{{url_for('bulk_pheno')}}" method=post enctype=multipart/form-data class="well">
 				<div class="form-group">
 					<label for="mapFile">Bulk phenotype  file</label>
+					<p>A csv file with N+1 columns where N is the number of phenotypes and the first line is a header: ID, Pheno1, Pheno2, ... </p>
 					<input type="file" name="bulk_pheno">
 					<input type="hidden" name="id" value="{{rows.project_id}}">
 					<input type="hidden" name="proname" value="{{rows.name}}">
@@ -210,7 +262,27 @@
 									{% endfor %}
 								</select>
 						</div>
+						
 				</div>
+				<div class="form-group">
+<label for="select" class="col-lg-2 control-label">Phenotype</label>
+						<div class="col-lg-10">
+								<select class="form-control" id="phen" name="phen">
+									<option value="ALL">ALL</option>
+									{% for phen in phen_list %}
+									<option value="{{phen}}">{{phen}}</option>
+									{% endfor %}
+								</select>
+						</div>
+					</div>
+					<div class="form-group">
+<label for="select" class="col-lg-2 control-label">Include genotypes</label>
+						<div class="col-lg-10">
+							<input id="gen" name="gen" type="checkbox" value="y"> Include availble
+						genotypes after phenotype column.	
+						</div>
+					</div>
+				<!--
 				<div class="form-group">
 					<label for="select" class="col-lg-2 control-label">Gender</label>
 					<div class="col-lg-10">
@@ -221,6 +293,7 @@
 						</select>
 					</div>
 				</div>
+-->
 				<div class="form-group">
 					<div class="col-lg-10 col-lg-offset-2">
 				<button type="submit" class="btn btn-success"><i class="fa fa-download"></i> Download</button>
@@ -240,7 +313,7 @@
 	<i class="fa fa-download"></i> PED file
 </button>
 
-				<a class="btn btn-success" href="{{url_for('download_map', project_id=rows.project_id, filename='file.dat')}}"><i class="fa fa-download"></i> MAP file</a>
+				<a class="btn btn-success disabled" href="{{url_for('download_map', project_id=rows.project_id, filename='file.dat')}}"><i class="fa fa-download"></i> MAP file</a>
 				<a class="btn btn-success disabled" href=""><i class="fa fa-download"></i> DAT file</a>
 			</div>
 		</div>
@@ -255,13 +328,12 @@
 {{form.hidden_tag()}}
 
   <div class="form-group">
-{{hardy.btn(class_="btn btn-default", id="btn_hardy")}}
+{{hardy.btn(class_="btn btn-default", id="btn_hardy", value="Run Tests")}}
   </div>
 
 </form>
 </div>
 </div>
-{% if cnt != -1 %}<p>There are {{cnt}} individuals with that ID.</p>{% endif %}
 {% if hardy_data %}<samp>{% for line in hardy_data %}
 	{{line}}<br>
 {% endfor %}
