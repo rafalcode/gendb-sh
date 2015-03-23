@@ -35,8 +35,8 @@ def index():
 	"""
 	ind_count = models.Individual.query.count()
 	project_count = models.Project.query.count()
-	gen_entr = models.Genotype.query.count()
-	phen_entr = models.Phenotype.query.count()
+	gen_entr = models.Genotype.query.group_by(models.Genotype.snp).count()
+	phen_entr = models.Phenotype.query.group_by(models.Phenotype.name).count()
 	return render_template('index.html', 
 			title='Overview',
 			ind_count=ind_count,
@@ -82,21 +82,12 @@ def logout():
 	MENU VIEWS
 ========================================
 """
-@gen_app.route('/reports')
-@login_required
-def reports():
-	title = "Reports"
-
-	rows = models.Individual.query.all()
-
-	
-	return render_template('reports.html',
-			title=title,
-			rows=rows)
-
 @gen_app.route('/projects')
 @login_required
 def projects():
+	"""Shows the projects that the curent
+	logged in user is member of.
+	"""
 	project_list = []
 
 	mem = models.Membership.query.filter_by(user_name=g.user.user_name).all()
@@ -108,10 +99,17 @@ def projects():
 @gen_app.route('/projects/<id>', methods=['GET', 'POST'])
 @login_required
 def project_page(id):
+	"""Show a page for a specific project.
+	Only members of the project can access this page.
+	"""
+
+	# Generate member table
 	mems = models.Membership.query.filter_by(project=id).all()
 	mem_list = []
 	for row in mems:
 		mem_list.append(row.user_name)
+
+	# Check if current user has rights to view this page
 	if g.user.user_name not in mem_list:
 		flash("You should not be here", "danger")
 		return redirect(url_for('index'))
@@ -119,57 +117,61 @@ def project_page(id):
 
 	cnt = -1
 
+	# Query the DB
 	project = models.Project.query.filter_by(project_id=id).one()
 	contribs = models.User.query.join(models.Membership).filter(and_(models.User.user_name == models.Membership.user_name, models.Membership.project==id)).all()
 	indivs_proj = models.Individual.query.filter_by(project_id=id).count()
-	genos_proj = models.Genotype.query.filter_by(project_id=id).count()
-	phenos_proj = models.Phenotype.query.filter_by(project_id=id).count()
+	genos_proj = models.Genotype.query.filter_by(project_id=id).group_by(models.Genotype.snp).count()
+	phenos_proj = models.Phenotype.query.filter_by(project_id=id).group_by(models.Phenotype.name).count()
 	groups = models.Group.query.filter_by(project_id=id).all()
 	phen_list = models.Phenotype.query.filter_by(project_id=id).all()
+	gen_list = models.Genotype.query.filter_by(project_id=id).all()
 
+
+	# Generate phenotype dropdown menu
 	phens = set()
 	for row in phen_list:
 		phens.add(row.name)
+	
+	gens = set()
+	for row in gen_list:
+		gens.add(row.snp)
 
-	form = SearchProject()
+	
+	# run PLINK
+	result = ""
 	hardyBtn = HardyButton()
-	indiv = models.Individual.query
-
-	lel = None
-
-	if form.validate_on_submit():
-		if form.indiv_id != "":
-			cnt = indiv.filter_by(individual_id=form.indiv_id.data).count()
 	if hardyBtn.validate_on_submit():
 		print gen_ped(id)
 		print gen_map(id)
 		from subprocess import check_output, CalledProcessError
 		try:
-			lel = check_output(["/cs/home/vt3/SHproject/plink", "--help"])  
-
-			lel = lel.split('\n')
+			# TODO: plink location variable
+			result = check_output(["/cs/home/vt3/SHproject/plink", "--help"])  
+			result = result.split('\n')
 		except CalledProcessError, e:
 			print e
-
-
 
 	return render_template('single_project.html',
 			title=project.name,
 			rows=project,
 			contribs=contribs,
-			form=form,
 			hardy=hardyBtn,
 			cnt=cnt,
 			indivs_proj=indivs_proj,
 			genos_proj=genos_proj,
 			phenos_proj=phenos_proj,
-			hardy_data=lel,
+			hardy_data=result,
 			groups=groups,
-			phen_list=phens)
+			phen_list=phens,
+			gen_list=gens)
 
 @gen_app.route('/add_member/<proj_id>', methods=['POST'])
 @login_required
 def add_member(proj_id):
+	"""Add a user to a project.
+	Error if user does not exist or is already a member.
+	"""
 
 	try:
 		memship = models.Membership()
@@ -189,6 +191,9 @@ def add_member(proj_id):
 @gen_app.route('/add_project', methods=['GET','POST'])
 @login_required
 def add_project():
+	"""Create a new project.
+	No duplicate names are allowed.
+	"""
 	form = AddProject()
 	project = models.Project() 
 	memship = models.Membership()
@@ -228,6 +233,9 @@ def add_project():
 @gen_app.route('/delete_project/<id>', methods=['GET'])
 @login_required
 def delete_project(id):
+	"""Delete a project and
+	all associated data.
+	"""
 	project = models.Project.query.filter_by(project_id=id).one()
 	if project.owner == g.user.user_name:
 		memship = models.Membership.query.filter_by(project=id).delete()
@@ -260,10 +268,12 @@ def delete_project(id):
 		
 	return redirect(url_for('projects'))
 
-# TODO: finish this
 @gen_app.route('/join_project/<id>', methods=['GET'])
 @login_required
 def join_project(id):
+	"""Used when a user tries to join a project.
+	Deprecated due to change in requirements.
+	"""
 	isMember = models.Membership.query.filter(and_(models.Membership.user_name == g.user.user_name, models.Membership.project == id)).count()
 	if isMember > 0:
 		flash('You are already a member', 'danger')
@@ -279,11 +289,15 @@ def join_project(id):
 @gen_app.route('/delete_member/<user_name>/<id>', methods=['GET'])
 @login_required
 def delete_member(user_name,id):
+	"""Allows the project admin to
+	delete project members
+	"""
 	project = models.Project.query.filter_by(project_id=id).one()
 	if project.owner == g.user.user_name:
 		if project.owner ==  user_name:
 			flash("You cannot delete yourself", "info")
 			return redirect(url_for('project_page', id=id))
+
 		models.Membership.query.filter(and_(models.Membership.user_name==user_name, models.Membership.project==id)).delete()
 		db.session.commit()
 		flash('User removed from project successfuly', 'success')
@@ -295,6 +309,14 @@ def delete_member(user_name,id):
 @gen_app.route('/upload_group', methods=['POST'])
 @login_required
 def upload_group():
+	"""Uploads a file that is used to create a group.
+	The format of the fileis:
+
+		ID -  column containing all the IDs that form up
+					the group
+	
+	The file needs to have only one column.
+	"""
 	csv.field_size_limit(sys.maxsize)
 	ind_list = []
 
@@ -302,7 +324,6 @@ def upload_group():
 		group_file = request.files['group']
 
 		if group_file and allowed_file(group_file.filename):
-			print request.form['name']
 			filename = secure_filename(group_file.filename)
 			group_file.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
 
@@ -324,16 +345,18 @@ def upload_group():
 				db.session.add(group_entry)
 				db.session.commit()
 
+			# clean up
 			except exc.IntegrityError, e:
 				try:
 					os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' + filename)
 				except OSError, e:
 					print str(e)
-
+			# clean up
 			try:
 				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
 			except OSError,e :
 				print str(e)
+
 			flash("File successfully parsed.", "success")
 			return redirect(url_for('project_page', id=request.form['id']))
 
@@ -344,6 +367,14 @@ def upload_group():
 @gen_app.route('/upload_individual', methods=['POST'])
 @login_required
 def upload_individual():
+	"""Upload a file containing a list of individuals.
+	The file format is the following:
+
+			ID - a column containing all the individual IDs
+			Gender - a column containing gender information
+	
+	No header is required.
+	"""
 	csv.field_size_limit(sys.maxsize)
 	num_rows = 0
 
@@ -362,7 +393,8 @@ def upload_individual():
 					for row in sr:
 						num_rows = num_rows+1
 						if len(row) != 2:
-							flash("Ivalid file format. Only two column with IDs and gender are required", "danger")
+							flash("Ivalid file format. Only two column with \
+									IDs and gender are required", "danger")
 							return redirect(url_for('project_page', id=request.form['id']))
 						ind = models.Individual()
 						ind.new_id = row[0]
@@ -378,10 +410,13 @@ def upload_individual():
 					log_entry.user_id = g.user.user_name
 					log_entry.action = "Upload Individual file for project " + request.form['proname']
 					db.session.add(log_entry)
+
 					"""
 					Commit changes to DB
 					"""
 					db.session.commit()
+
+			# clean up
 			except exc.IntegrityError, e:
 				try:
 					os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
@@ -394,15 +429,33 @@ def upload_individual():
 				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
 			except OSError,e :
 				print str(e)
+
+
 			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
 			return redirect(url_for('project_page', id=request.form['id']))
 	
-	flash("Invalid file", "danger")
+	flash("Invalid file. Make sure you have the right file extension \
+			and number of columns.", "danger")
 	return redirect(url_for('project_page', id=request.form['id']))
 
 @gen_app.route('/bulk_pheno', methods=['POST'])
 @login_required
 def bulk_pheno():
+	"""Bulk upload of phenotype information
+	The file format is the following:
+			IDs - column containing all the IDs
+			Phen1 - first phenotype
+			Phen2 - second phenotype
+			Phen3 - etc...
+			PhenN - ...
+
+	This file REQUIRES a header:
+			ID - the first cell can be anything
+			Phen Name 1 - coresponding phenotype name
+			Pnen Name 2 - ...
+			Phen Name 3 - ...
+			Phen Name N - ...
+	"""
 	csv.field_size_limit(sys.maxsize)
 	num_rows = 0
 
@@ -419,11 +472,9 @@ def bulk_pheno():
 					
 					sr = csv.reader(csvfile, delimiter=',')
 					header = sr.next()
-					print header
 					
 					# List of IDs for when it crashes
 					future = []
-
 
 					for row in sr:
 						future.append(row[0])
@@ -446,12 +497,13 @@ def bulk_pheno():
 					log_entry.user_id = g.user.user_name
 					log_entry.action = "Upload Phenotype file for project " + request.form['proname']
 					db.session.add(log_entry)
+
 					"""
 					Commit changes to DB
 					"""
 					db.session.commit()
-
-
+			
+			# clean up
 			except exc.IntegrityError, e:
 				print e
 				db.session.rollback()
@@ -459,6 +511,7 @@ def bulk_pheno():
 					os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
 				except OSError,e :
 					print str(e)
+
 				# Generate a list of missing IDs
 				inds = models.Individual.query.filter_by(project_id=request.form['id']).all()
 				current = []
@@ -480,18 +533,30 @@ def bulk_pheno():
 			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
 			return redirect(url_for('project_page', id=request.form['id']))
 	
-	flash("Invalid file", "danger")
+	flash("Invalid file. Make sure you have the right file extension \
+			and number of columns.", "danger")
+
 	return redirect(url_for('project_page', id=request.form['id']))
-	
-
-	
-	return redirect(url_for('project_page', id=request.form['id']))
-
-
 
 @gen_app.route('/bulk_geno', methods=['POST'])
 @login_required
 def bulk_geno():
+	"""Bulk upload of genotype information
+	The file format is the following:
+			IDs - column containing all the IDs
+			Gen1 - first genotype
+			Gen2 - second genotype
+			Gen3 - etc...
+			GenN - ...
+
+	This file REQUIRES a header:
+			ID - the first cell can be anything
+			Gen Name 1 - coresponding genotype name
+			Gen Name 2 - ...
+			Gen Name 3 - ...
+			Gen Name N - ...
+	"""
+
 	csv.field_size_limit(sys.maxsize)
 	num_rows = 0
 
@@ -577,18 +642,34 @@ def bulk_geno():
 			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
 			return redirect(url_for('project_page', id=request.form['id']))
 	
-	flash("Invalid file", "danger")
+	flash("Invalid file. Make sure you have the right file extension \
+			and number of columns.", "danger")
 	return redirect(url_for('project_page', id=request.form['id']))
-	
-			
 
 @gen_app.route('/single_geno', methods=['POST'])
 @login_required
 def single_geno():
+	"""Upload a file containing information
+	for a single genotype.
+	The file format is the following:
+			ID - column with genotype IDs
+			SNP - SNP name column
+			Call - call column
+	
+	No header is required.
+	"""
+	abort_commit = False
 	csv.field_size_limit(sys.maxsize)
 	num_rows = 0
+	current_geno_q = models.Genotype.query.filter_by(project_id=request.form['id']).all()
+	current_geno = set()
+	duplicate = set()
+	for row in current_geno_q:
+		current_geno.add(row.snp)
+	print current_geno
 
 	if request.method == 'POST':
+
 		single_geno = request.files['single_geno']
 
 		if single_geno and allowed_file(single_geno.filename):
@@ -618,19 +699,28 @@ def single_geno():
 					csvfile.seek(0)
 					for row in sr:
 						num_rows = num_rows+1
-						if len(row) != 3:
+						if len(row) > 4:
 							flash("Ivalid file format", "danger")
 							return redirect(url_for('project_page', id=request.form['id']))
 						gen = models.Genotype()
 						gen.individual_id = row[0]
+						if row[1] in current_geno:
+							duplicate.add(row[1])
+							abort_commit = True
 						gen.snp = row[1]
-						if (row[2] != "Undetermined"):
-							#TODO improve parsing
-							gen.call = row[2][-3:]
+
+						if len(row) == 4:
+							gen.call = row[2] + "/" + row[3]
 						else:
-							gen.call = "X"
+							gen.call = row[2]
+
 						gen.project_id = request.form['id']
 						db.session.add(gen)
+
+					if abort_commit:
+						flash("Duplicate genotypes detected", "danger")
+						flash(list(duplicate), "info")
+						return redirect(url_for('project_page', id=request.form['id']))
 
 					"""
 					Create log entry
@@ -674,12 +764,16 @@ def single_geno():
 			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
 			return redirect(url_for('project_page', id=request.form['id']))
 	
-	flash("Invalid file", "danger")
+	flash("Invalid file. Make sure you have the right file extension \
+			and number of columns.", "danger")
 	return redirect(url_for('project_page', id=request.form['id']))
 
 @gen_app.route('/download_ped/<int:project_id>/<path:filename>', methods=['POST'])
 @login_required
 def download_ped(project_id, filename):
+	"""Generate and serve a PED file upon request.
+	Magic pretty much...
+	"""
 
 	if models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).count() ==0:
 		print "LEL"
@@ -747,18 +841,22 @@ def download_ped(project_id, filename):
 			X = False
 
 			for row in new_final_out:
-				if new_final_out[row] != []:
-					spl = new_final_out[row][column].split("/")
-					if spl[0] == "A" or spl[1] == "A":
-						A = True
-					if spl[0] == "C" or spl[1] == "C":
-						C = True
-					if spl[0] == "G" or spl[1] == "G":
-						G = True
-					if spl[0] == "T" or spl[1] == "T":
-						T = True
-					#elif spl[0] == "X" or spl[2] == "X":
-					#	X = True
+				try:
+					if new_final_out[row] != []:
+						spl = new_final_out[row][column].split("/")
+						if spl[0] == "A" or spl[1] == "A":
+							A = True
+						if spl[0] == "C" or spl[1] == "C":
+							C = True
+						if spl[0] == "G" or spl[1] == "G":
+							G = True
+						if spl[0] == "T" or spl[1] == "T":
+							T = True
+						#elif spl[0] == "X" or spl[2] == "X":
+						#	X = True
+				except IndexError:
+					flash("Possible difference in genotype/phenotype count.", "danger")
+					return redirect(url_for('project_page', id=project_id))
 
 			lol = 0
 			for row in new_final_out:
@@ -899,7 +997,7 @@ def download_ped(project_id, filename):
 						par_2 = base_str+'2'
 
 					if phen_list != {}:
-						z = [] + [int(row.split('_')[-2])] + [row] + [par_1] + [par_2] + [genders[row]] +   phen_list[row] + c
+						z = [] + [int(row.split('_')[-2])] + [row] + [par_1] + [par_2] + [genders[row]] + c + phen_list[row]
 					else:
 						z = [] + [int(row.split('_')[-2])] + [row] + [par_1] + [par_2] + [genders[row]]  + c
 
@@ -1136,3 +1234,9 @@ def log_page(page=1):
 	for row in log.items:
 		row.timestamp = datetime.datetime.fromtimestamp(int(row.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
 	return render_template('log.html', title="Logs",rows=log)
+
+@gen_app.route('/help')
+@login_required
+def help():
+
+	return render_template('help.html', title="Help")

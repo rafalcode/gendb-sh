@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div class="col-md-6">
+
+</div>
+<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="indivsFile">
+      <h4 class="panel-title">
+        <a class="collapesed" data-toggle="collapse" data-parent="#accordion" href="#collapseIndivs" aria-expanded="false" aria-controls="collapseIndivs">
+          Uploading "Individual" Files
+        </a>
+      </h4>
+    </div>
+    <div id="collapseIndivs" class="panel-collapse collapse" role="tabpanel" aria-labelledby="indivsFile">
+      <div class="panel-body">
+				<a href="#" class="btn btn-primary disabled"> Download Sample File</a>
+				<h3>File Format</h3>
+				The "individuals" file is the first file that needs to be uploaded to a project. The system will not allow other files to be uploaded before an "individuals" file is uploaded.
+The file needs to have two columns. 
+<table class="table table-bordered table-condensed">
+      <thead>
+        <tr>
+          <th>Option</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">File extension</th>
+          <td>.csv</td>
+        </tr>
+        <tr>
+          <th scope="row">Number of columns</th>
+          <td>2</td>
+        </tr>
+        <tr>
+          <th scope="row">Delimiters</th>
+          <td>Space, Tab or Comma</td>
+        </tr>
+				<tr>
+					<th scope="row">Header needed</th>
+					<td><strong>NO</strong></td>
+				</tr>
+				<tr>
+					<th scope="row">Column 1</th>
+					<td>Contains individual IDs. For example <code>YRK_11_33</code></td>
+				</tr>
+				<tr>
+					<th scope="row">Column 2</th>
+					<td>Contains gender digit for the corresponding ID. For example <code>1</code>,<code>2</code> or <code>-1</code> for
+					unknown.</td>
+				</tr>
+
+      </tbody>
+    </table>
+
+		<h3>Infomration Messages After Upload</h3>
+		Depending on the validity of the file, several types of messages may appear after upload. Seeing a "Individuals file uploaded successfully" message means that the file was transferred to the server without any errors. It does not mean that any entries have been written to the database. Parsin may fail at this stage. If this happens an error message describing the error will appear. Otherwise a message confirming the entry of data to the database will be presented.
+		<br/><br/>
+		Here are some exaple screenshots of messages:
+		<br />
+		<div class="well"><img src="/static/bad_indiv.png" /></div>
+		<div class="well"><img src="/static/good_indiv.png" /></div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="headingGeno">
+      <h4 class="panel-title">
+        <a class="collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+          Uploading "Genotype" File
+        </a>
+      </h4>
+    </div>
+    <div id="collapseTwo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingGeno">
+      <div class="panel-body">
+				TO BE POPULATED
+      </div>
+    </div>
+  </div>
+  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="headingThree">
+      <h4 class="panel-title">
+        <a class="collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+        	Uploading Phenotype Files
+        </a>
+      </h4>
+    </div>
+    <div id="collapseThree" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
+      <div class="panel-body">
+       TO BE POPULATED 
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+

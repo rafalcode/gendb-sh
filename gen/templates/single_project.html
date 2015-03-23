@@ -53,29 +53,6 @@
 
 			</div>
 		</div>
-<div class="panel panel-default">
-				<div class="panel-heading">
-				Groups
-			</div>
-			<div class="panel-body">
-				<form role="form" action="{{url_for('upload_group')}}" method=post enctype=multipart/form-data>
-<div class="form-group">
-					  <label for="groupName">Group Name</label>
-					  <input type="text" class="form-control" name="name">
-				 </div>
-
-				<div class="form-group">
-					<label for="groupFile">Group file</label>
-					<input type="file" name="group">
-					<input type="hidden" name="id" value="{{rows.project_id}}">
-					<input type="hidden" name="proname" value="{{rows.name}}">
-				</div>
-				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
-			</form>
-
-			</div>
-		</div>
-
 			<div class="panel panel-default">
 				<div class="panel-heading">
 				Upload
@@ -90,7 +67,7 @@
 <button type="button" class="btn btn-success {% if indivs_proj == 0 %}disabled{% endif %} " data-toggle="modal" data-target="#pheno_modal">
 	<i class="fa fa-upload"></i> Phenotype
 </button>
-<button type="button" class="btn btn-success disabled" data-toggle="modal" data-target="#map_modal">
+<button type="button" class="btn btn-success" data-toggle="modal" data-target="#map_modal">
 	<i class="fa fa-upload"></i> Map
 </button>
 <button type="button" class="btn btn-success disabled" data-toggle="modal" data-target="#dat_modal">
@@ -267,7 +244,7 @@
 				<div class="form-group">
 <label for="select" class="col-lg-2 control-label">Phenotype</label>
 						<div class="col-lg-10">
-								<select class="form-control" id="phen" name="phen">
+								<select class="form-control" id="phen" name="phen" size=4 multiple>
 									<option value="ALL">ALL</option>
 									{% for phen in phen_list %}
 									<option value="{{phen}}">{{phen}}</option>
@@ -276,12 +253,17 @@
 						</div>
 					</div>
 					<div class="form-group">
-<label for="select" class="col-lg-2 control-label">Include genotypes</label>
+<label for="select" class="col-lg-2 control-label">Genotype</label>
 						<div class="col-lg-10">
-							<input id="gen" name="gen" type="checkbox" value="y"> Include availble
-						genotypes after phenotype column.	
+								<select class="form-control" id="gen" name="gen" size=4 multiple>
+									<option value="ALL">ALL</option>
+									{% for gen in gen_list %}
+									<option value="{{gen}}">{{gen}}</option>
+									{% endfor %}
+								</select>
 						</div>
 					</div>
+					
 				<!--
 				<div class="form-group">
 					<label for="select" class="col-lg-2 control-label">Gender</label>
@@ -304,6 +286,29 @@
 	</div>
 </div>
 </div>
+<div class="panel panel-default">
+				<div class="panel-heading">
+				Groups
+			</div>
+			<div class="panel-body">
+				<form role="form" action="{{url_for('upload_group')}}" method=post enctype=multipart/form-data>
+<div class="form-group">
+					  <label for="groupName">Group Name</label>
+					  <input type="text" class="form-control" name="name">
+				 </div>
+
+				<div class="form-group">
+					<label for="groupFile">Group file</label>
+					<input type="file" name="group">
+					<input type="hidden" name="id" value="{{rows.project_id}}">
+					<input type="hidden" name="proname" value="{{rows.name}}">
+				</div>
+				<button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
+			</form>
+
+			</div>
+		</div>
+
 
 			<div class="panel panel-default">
 				<div class="panel-heading">Download</div>
@@ -320,12 +325,12 @@
 		</div>
 		<div class="col-md-12">
 		
-<h1>PLINK Commands</h1>
+<h1>QC Test</h1>
 <hr>
 <div class="row">
 <div class="col-md-6">
 <form action="{{url_for('project_page', id=rows.project_id)}}" method="POST" name="hardy_form">
-{{form.hidden_tag()}}
+{{hardy.hidden_tag()}}
 
   <div class="form-group">
 {{hardy.btn(class_="btn btn-default", id="btn_hardy", value="Run Tests")}}
