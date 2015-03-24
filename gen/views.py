@@ -774,6 +774,22 @@ def download_ped(project_id, filename):
 	"""Generate and serve a PED file upon request.
 	Magic pretty much...
 	"""
+	selected_phens = request.form.getlist('phen')
+	selected_gens = request.form.getlist('gen')
+
+	if "NONE" in selected_gens:
+		selected_gens = ["NONE"]
+	if len(selected_gens) == 0:
+		selected_gens = ["ALL"]
+
+	if "NONE" in selected_phens:
+		selected_phens = ["NONE"]
+	if len(selected_phens) == 0:
+		selected_phens = ["ALL"]
+
+
+
+	
 
 	if models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).count() ==0:
 		print "LEL"
@@ -787,6 +803,7 @@ def download_ped(project_id, filename):
 	group_list = []
 	genders = {}
 
+
 	grp = request.form['group']
 
 	if grp != "ALL":
@@ -798,11 +815,17 @@ def download_ped(project_id, filename):
 	for p in phens:
 		temp= models.Phenotype.query.filter(and_(project_id==project_id,models.Phenotype.name==p.name)).all()
 		for row in temp:
-			try:
-				phen_list[row.individual_id].append(row.value)
-			except KeyError:
-				phen_list[row.individual_id] = [row.value]
-	
+			if 'ALL' in selected_phens:
+				try:
+					phen_list[row.individual_id].append(row.value)
+				except KeyError:
+					phen_list[row.individual_id] = [row.value]
+			elif row.name in selected_phens:
+				try:
+					phen_list[row.individual_id].append(row.value)
+				except KeyError:
+					phen_list[row.individual_id] = [row.value]
+
 
 	ind = models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).all()
 		
@@ -813,7 +836,10 @@ def download_ped(project_id, filename):
 	
 	gens = models.Genotype.query.filter_by(project_id=project_id).all()
 	for row in gens:
-		gens_list[row.snp] = [row.snp]
+		if 'ALL' in selected_gens:
+			gens_list[row.snp] = [row.snp]
+		elif row.snp in selected_gens:
+			gens_list[row.snp] = [row.snp]
 
 	for i in gens_list:
 		current_gen = models.Genotype.query.filter_by(project_id=project_id).order_by().filter(models.Genotype.snp == i).all()
