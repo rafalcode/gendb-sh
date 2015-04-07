@@ -70,9 +70,9 @@
 <button type="button" class="btn btn-success" data-toggle="modal" data-target="#map_modal">
 	<i class="fa fa-upload"></i> Map
 </button>
-<button type="button" class="btn btn-success disabled" data-toggle="modal" data-target="#dat_modal">
+<!--<button type="button" class="btn btn-success disabled" data-toggle="modal" data-target="#dat_modal">
 	<i class="fa fa-upload"></i> Dat
-</button>
+</button>-->
 </div>
 			</div>
 			<div class="modal fade" id="indiv_modal" tabindex="-1" role="dialog" aria-labelledby="indiv_label" aria-hidden="true">
@@ -320,8 +320,8 @@
 	<i class="fa fa-download"></i> PED file
 </button>
 
-				<a class="btn btn-success disabled" href="{{url_for('download_map', project_id=rows.project_id, filename='file.dat')}}"><i class="fa fa-download"></i> MAP file</a>
-				<a class="btn btn-success disabled" href=""><i class="fa fa-download"></i> DAT file</a>
+				<a class="btn btn-success" href="{{url_for('download_dat', project_id=rows.project_id, filename='file.dat')}}"><i class="fa fa-download"></i> DAT file</a>
+				<!--				<a class="btn btn-success disabled" href=""><i class="fa fa-download"></i> DAT file</a>-->
 			</div>
 		</div>
 		</div>

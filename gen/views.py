@@ -37,12 +37,14 @@ def index():
 	project_count = models.Project.query.count()
 	gen_entr = models.Genotype.query.group_by(models.Genotype.snp).count()
 	phen_entr = models.Phenotype.query.group_by(models.Phenotype.name).count()
+	latest_proj = models.Project.query.filter_by(owner=g.user.user_name).order_by(models.Project.project_id.desc()).limit(3)
 	return render_template('index.html', 
-			title='Overview',
+			title='Welcome',
 			ind_count=ind_count,
 			project_count=project_count,
 			gen_entr=gen_entr,
-			phen_entr=phen_entr)
+			phen_entr=phen_entr,
+			latest=latest_proj)
 
 @gen_app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -811,9 +813,9 @@ def download_ped(project_id, filename):
 		group_list = group[0].indiv_list.split(",")
 	#print group_list
 
-	phens = db.engine.execute('SELECT name FROM phenotype group by name;')
+	phens = db.engine.execute('SELECT * FROM phenotype where project_id='+ str(project_id) +' group by name;')
 	for p in phens:
-		temp= models.Phenotype.query.filter(and_(project_id==project_id,models.Phenotype.name==p.name)).all()
+		temp= models.Phenotype.query.filter(and_(models.Phenotype.project_id==project_id,models.Phenotype.name==p.name)).all()
 		for row in temp:
 			if 'ALL' in selected_phens:
 				try:
@@ -825,7 +827,6 @@ def download_ped(project_id, filename):
 					phen_list[row.individual_id].append(row.value)
 				except KeyError:
 					phen_list[row.individual_id] = [row.value]
-
 
 	ind = models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).all()
 		
@@ -878,8 +879,8 @@ def download_ped(project_id, filename):
 							G = True
 						if spl[0] == "T" or spl[1] == "T":
 							T = True
-						#elif spl[0] == "X" or spl[2] == "X":
-						#	X = True
+						if spl[0] == "X" or spl[1] == "X":
+							X = True
 				except IndexError:
 					flash("Possible difference in genotype/phenotype count.", "danger")
 					return redirect(url_for('project_page', id=project_id))
@@ -937,7 +938,7 @@ def download_ped(project_id, filename):
 							fr = sn = "1"
 						elif new_final_out[row][column] == "T/T":
 							fr = sn = "2"
-					elif X:
+					if new_final_out[row][column] == "X/X":
 						fr = sn = "X"
 					new_final_out[row][column] = fr+','+sn
 					lol += 1
@@ -1023,7 +1024,10 @@ def download_ped(project_id, filename):
 						par_2 = base_str+'2'
 
 					if phen_list != {}:
-						z = [] + [int(row.split('_')[-2])] + [row] + [par_1] + [par_2] + [genders[row]] + c + phen_list[row]
+						try:
+							z = [] + [int(row.split('_')[-2])] + [row] + [par_1] + [par_2] + [genders[row]] + c + phen_list[row]
+						except KeyError, e:
+							z = [] + [int(row.split('_')[-2])] + [row] + [par_1] + [par_2] + [genders[row]]  + c
 					else:
 						z = [] + [int(row.split('_')[-2])] + [row] + [par_1] + [par_2] + [genders[row]]  + c
 
@@ -1035,6 +1039,7 @@ def download_ped(project_id, filename):
 							writer.writerow(z)
 
 			except KeyError, e:
+
 				tmeptemptemp = 1+1
 		#print final_out
 		#row = [] + [str(row.individual_id)] + [str(row.new_id)] + [fr] + [sn]
@@ -1226,23 +1231,29 @@ def gen_map(project_id):
 
 
 
-@gen_app.route('/download_map/<int:project_id>/<path:filename>', methods=['GET'])
+@gen_app.route('/download_dat/<int:project_id>/<path:filename>', methods=['GET'])
 @login_required
-def download_map(filename,project_id):
+def download_dat(filename,project_id):
 	geno = models.Genotype.query.filter_by(project_id=project_id).all()
-	darn = {}
+	pheno = db.engine.execute('SELECT name FROM phenotype where project_id='+ str(project_id) +' group by name;')
+	gen_list = {}
+	phn_list = {}
 
 	for row in geno:
-		darn[row.snp] = row.snp
-
+		gen_list[row.snp] = row.snp
+	for row in pheno:
+		phn_list[row.name] = row.name
 
 	with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'w+') as f:
 		writer = csv.writer(f, delimiter=',')
 
-		for row in darn:
-			r = [] + ["M"] + [darn[row]]
+		for row in gen_list:
+			r = [] + ["M"] + [gen_list[row]]
 			writer.writerow(r)
-	
+		for row in phn_list:
+			r = [] + ["T"] + [phn_list[row]]
+			writer.writerow(r)
+
 	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename=filename)
 
 
@@ -1266,3 +1277,38 @@ def log_page(page=1):
 def help():
 
 	return render_template('help.html', title="Help")
+
+@gen_app.route('/users')
+@login_required
+def users():
+	if g.user.user_name != gen_app.config['ADMIN_USER']:
+		flash("You should not be here", "danger")
+		return redirect(url_for('index'))
+
+	
+	usrs = models.User.query.all()
+
+
+	return render_template('users.html', title="Users", rows=usrs)
+
+
+
+@gen_app.route('/add_user', methods=['POST'])
+@login_required
+def add_user():
+	if g.user.user_name != gen_app.config['ADMIN_USER']:
+		flash("You should not be here", "danger")
+		return redirect(url_for('index'))
+
+	user = models.User()
+	if request.method == 'POST':
+		import hashlib
+		user.password = hashlib.sha512(request.form["password"]).hexdigest()
+		user.user_name = request.form['username']
+		user.email = request.form['email']
+		db.session.add(user)
+		db.session.commit()
+
+	return redirect(url_for('users'))
+
+

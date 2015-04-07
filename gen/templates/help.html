@@ -5,6 +5,21 @@
 
 </div>
 <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+	  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="headingGeno">
+      <h4 class="panel-title">
+        <a class="collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+          Creating and managing projects
+        </a>
+      </h4>
+    </div>
+    <div id="collapseFour" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingProj">
+      <div class="panel-body">
+				To ceate a project visit the <a href="{{url_for('add_project')}}">project creation page</a>, enter a title and a description and click <code>Create</code>. The name and description are compulsory and duplicate project names are not allowed. When you create a project, you automatically become the project owner. To manage the project, go to the <a href="{{url_for('projects')}}">projects page</a> and select the one you want to manage. On the single project page you will see the project name, description and collaborators. You can add new members, delete them or delete the whole project using the buttons. On the right side of the page you can see project statistics and the controls used to upload and download files.
+      </div>
+    </div>
+  </div>
+
   <div class="panel panel-default">
     <div class="panel-heading" role="tab" id="indivsFile">
       <h4 class="panel-title">
@@ -72,13 +87,64 @@ The file needs to have two columns.
     <div class="panel-heading" role="tab" id="headingGeno">
       <h4 class="panel-title">
         <a class="collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-          Uploading "Genotype" File
+          Uploading "Genotype" Files
         </a>
       </h4>
     </div>
     <div id="collapseTwo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingGeno">
       <div class="panel-body">
-				TO BE POPULATED
+<a href="#" class="btn btn-primary disabled"> Download Sample File</a>
+				<h3>File Format</h3>
+				Genotype files can be uploaded after intividual IDs are present in the database. This file has to contain three or four columns, depending on the delimiter being used. For example if the pair is represented as <code>A/G</code>, the file will have three columns. The pair can also be represented as <code>A,G</code> or <code>A G</code> or <code>A__TAB__G</code> meaning the file will have four columns.
+<table class="table table-bordered table-condensed">
+      <thead>
+        <tr>
+          <th>Option</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">File extension</th>
+          <td>.csv</td>
+        </tr>
+        <tr>
+          <th scope="row">Number of columns</th>
+          <td>3 or 4</td>
+        </tr>
+        <tr>
+          <th scope="row">Delimiters</th>
+          <td>Space, Tab or Comma</td>
+        </tr>
+				<tr>
+					<th scope="row">Header needed</th>
+					<td><strong>NO</strong></td>
+				</tr>
+				<tr>
+					<th scope="row">Column 1</th>
+					<td>Contains individual IDs. For example <code>YRK_11_33</code></td>
+				</tr>
+				<tr>
+					<th scope="row">Column 2</th>
+					<td>Contains SNP. For example <code>rs4280164</code></td>
+				</tr>
+				<tr>
+					<th scope="row">Column 3/4</th>
+					<td>Contains the value. For example <code>A/G</code> or <code>A,G</code></td>
+				</tr>
+
+
+      </tbody>
+    </table>
+
+		<h3>Infomration Messages After Upload</h3>
+		When uploading a genotype file, some rules need to be followed. The system will not accept a file which contains duplicate genotypes. A message will be displayed with the duplicate shown. An example screenshot can be seen below. Individual IDs should match the IDs in the database. If a missing ID is detected, the data wont be written to the database and the missing IDs show in the error message.
+		<br/><br/>
+		Here are some exaple screenshots of messages:
+		<br />
+		<div class="well"><img src="/static/missing_id.png" /></div>
+		<div class="well"><img src="/static/duplicate_geno.png" /></div>
+
       </div>
     </div>
   </div>
@@ -92,8 +158,44 @@ The file needs to have two columns.
     </div>
     <div id="collapseThree" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
       <div class="panel-body">
-       TO BE POPULATED 
-      </div>
+<a href="#" class="btn btn-primary disabled"> Download Sample File</a>
+				<h3>File Format</h3>
+			 Phenotype files container a variable number of columns with a minimum of two. A header is also required for this file. The first column contains an individual ID. The second and subsequent columns contain phenotype values. The header contains the name for each phenotype value and is required for every column that contains phenotype data.
+				<table class="table table-bordered table-condensed">
+      <thead>
+        <tr>
+          <th>Option</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">File extension</th>
+          <td>.csv</td>
+        </tr>
+        <tr>
+          <th scope="row">Number of columns</th>
+          <td>2 or more</td>
+        </tr>
+        <tr>
+          <th scope="row">Delimiters</th>
+          <td>Space, Tab or Comma</td>
+        </tr>
+				<tr>
+					<th scope="row">Header needed</th>
+					<td><strong>YES</strong></td>
+				</tr>
+				<tr>
+					<th scope="row">Column 1</th>
+					<td>Contains individual IDs. For example <code>YRK_11_33</code></td>
+				</tr>
+				<tr>
+					<th scope="row">Column 2..N</th>
+					<td>Contains Phenotype value.</td>
+				</tr>
+      </tbody>
+    </table>
+
     </div>
   </div>
 </div>
