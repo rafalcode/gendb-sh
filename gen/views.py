@@ -37,7 +37,10 @@ def index():
 	project_count = models.Project.query.count()
 	gen_entr = models.Genotype.query.group_by(models.Genotype.snp).count()
 	phen_entr = models.Phenotype.query.group_by(models.Phenotype.name).count()
-	latest_proj = models.Project.query.filter_by(owner=g.user.user_name).order_by(models.Project.project_id.desc()).limit(3)
+	latest_proj = models.Project.query.\
+			filter_by(owner=g.user.user_name).\
+			order_by(models.Project.project_id.desc()).limit(3)
+
 	return render_template('index.html', 
 			title='Welcome',
 			ind_count=ind_count,
@@ -120,14 +123,18 @@ def project_page(id):
 	cnt = -1
 
 	# Query the DB
-	project = models.Project.query.filter_by(project_id=id).one()
-	contribs = models.User.query.join(models.Membership).filter(and_(models.User.user_name == models.Membership.user_name, models.Membership.project==id)).all()
+	project 		= models.Project.query.filter_by(project_id=id).one()
+	contribs 		= models.User.query.join(models.Membership).\
+			filter(and_(models.User.user_name == models.Membership.\
+			user_name, models.Membership.project==id)).all()
 	indivs_proj = models.Individual.query.filter_by(project_id=id).count()
-	genos_proj = models.Genotype.query.filter_by(project_id=id).group_by(models.Genotype.snp).count()
-	phenos_proj = models.Phenotype.query.filter_by(project_id=id).group_by(models.Phenotype.name).count()
-	groups = models.Group.query.filter_by(project_id=id).all()
-	phen_list = models.Phenotype.query.filter_by(project_id=id).all()
-	gen_list = models.Genotype.query.filter_by(project_id=id).all()
+	genos_proj 	= models.Genotype.query.filter_by(project_id=id).\
+			group_by(models.Genotype.snp).count()
+	phenos_proj = models.Phenotype.query.filter_by(project_id=id).\
+			group_by(models.Phenotype.name).count()
+	groups 			= models.Group.query.filter_by(project_id=id).all()
+	phen_list 	= models.Phenotype.query.filter_by(project_id=id).all()
+	gen_list 	= models.Genotype.query.filter_by(project_id=id).all()
 
 
 	# Generate phenotype dropdown menu
@@ -144,8 +151,6 @@ def project_page(id):
 	result = ""
 	hardyBtn = HardyButton()
 	if hardyBtn.validate_on_submit():
-		print gen_ped(id)
-		print gen_map(id)
 		from subprocess import check_output, CalledProcessError
 		try:
 			# TODO: plink location variable
@@ -276,7 +281,9 @@ def join_project(id):
 	"""Used when a user tries to join a project.
 	Deprecated due to change in requirements.
 	"""
-	isMember = models.Membership.query.filter(and_(models.Membership.user_name == g.user.user_name, models.Membership.project == id)).count()
+	isMember = models.Membership.query.\
+			filter(and_(models.Membership.user_name == g.user.user_name, \
+			models.Membership.project == id)).count()
 	if isMember > 0:
 		flash('You are already a member', 'danger')
 	else:
@@ -300,7 +307,8 @@ def delete_member(user_name,id):
 			flash("You cannot delete yourself", "info")
 			return redirect(url_for('project_page', id=id))
 
-		models.Membership.query.filter(and_(models.Membership.user_name==user_name, models.Membership.project==id)).delete()
+		models.Membership.query.filter(and_(models.Membership.user_name==user_name,\
+				models.Membership.project==id)).delete()
 		db.session.commit()
 		flash('User removed from project successfuly', 'success')
 	else:
@@ -410,7 +418,8 @@ def upload_individual():
 					import time
 					log_entry.timestamp = int(time.time())
 					log_entry.user_id = g.user.user_name
-					log_entry.action = "Upload Individual file for project " + request.form['proname']
+					log_entry.action = "Upload Individual file for project "\
+							+ request.form['proname']
 					db.session.add(log_entry)
 
 					"""
@@ -433,7 +442,8 @@ def upload_individual():
 				print str(e)
 
 
-			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
+			flash("File successfully parsed. "+ str(num_rows) + \
+					" lines added to database", "success")
 			return redirect(url_for('project_page', id=request.form['id']))
 	
 	flash("Invalid file. Make sure you have the right file extension \
@@ -497,7 +507,8 @@ def bulk_pheno():
 					import time
 					log_entry.timestamp = int(time.time())
 					log_entry.user_id = g.user.user_name
-					log_entry.action = "Upload Phenotype file for project " + request.form['proname']
+					log_entry.action = "Upload Phenotype file for project " + \
+							request.form['proname']
 					db.session.add(log_entry)
 
 					"""
@@ -532,7 +543,8 @@ def bulk_pheno():
 				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
 			except OSError,e :
 				print str(e)
-			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
+			flash("File successfully parsed. "+ str(num_rows) + \
+					" lines added to database", "success")
 			return redirect(url_for('project_page', id=request.form['id']))
 	
 	flash("Invalid file. Make sure you have the right file extension \
@@ -588,7 +600,6 @@ def bulk_geno():
 
 					sr = csv.reader(csvfile, delimiter=dell)
 					header = sr.next()
-					print header
 
 					csvfile.seek(0)
 					for row in sr:
@@ -641,7 +652,8 @@ def bulk_geno():
 				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
 			except OSError,e :
 				print str(e)
-			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
+			flash("File successfully parsed. "+ str(num_rows) + \
+					" lines added to database", "success")
 			return redirect(url_for('project_page', id=request.form['id']))
 	
 	flash("Invalid file. Make sure you have the right file extension \
@@ -663,12 +675,12 @@ def single_geno():
 	abort_commit = False
 	csv.field_size_limit(sys.maxsize)
 	num_rows = 0
-	current_geno_q = models.Genotype.query.filter_by(project_id=request.form['id']).all()
+	current_geno_q = models.Genotype.query.\
+			filter_by(project_id=request.form['id']).all()
 	current_geno = set()
 	duplicate = set()
 	for row in current_geno_q:
 		current_geno.add(row.snp)
-	print current_geno
 
 	if request.method == 'POST':
 
@@ -731,7 +743,8 @@ def single_geno():
 					import time
 					log_entry.timestamp = int(time.time())
 					log_entry.user_id = g.user.user_name
-					log_entry.action = "Upload Genotype file for project " + request.form['proname']
+					log_entry.action = "Upload Genotype file for project "\
+							+ request.form['proname']
 					db.session.add(log_entry)
 					"""
 					Commit changes to DB
@@ -763,7 +776,8 @@ def single_geno():
 				os.remove(gen_app.config['UPLOAD_FOLDER'] + '/' +filename)
 			except OSError,e :
 				print str(e)
-			flash("File successfully parsed. "+ str(num_rows) + " lines added to database", "success")
+			flash("File successfully parsed. "+ str(num_rows) + \
+					" lines added to database", "success")
 			return redirect(url_for('project_page', id=request.form['id']))
 	
 	flash("Invalid file. Make sure you have the right file extension \
@@ -793,8 +807,8 @@ def download_ped(project_id, filename):
 
 	
 
-	if models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).count() ==0:
-		print "LEL"
+	if models.Individual.query.filter_by(project_id=project_id).\
+			order_by(models.Individual.new_id.asc()).count() ==0:
 		flash("No individuals", "danger")
 		return redirect(url_for('project_page', id=project_id))
 	
@@ -811,11 +825,13 @@ def download_ped(project_id, filename):
 	if grp != "ALL":
 		group = models.Group.query.filter_by(group_id=grp).all()
 		group_list = group[0].indiv_list.split(",")
-	#print group_list
 
-	phens = db.engine.execute('SELECT * FROM phenotype where project_id='+ str(project_id) +' group by name;')
+	phens = db.engine.execute('SELECT * FROM phenotype where project_id='\
+			+ str(project_id) +' group by name;')
 	for p in phens:
-		temp= models.Phenotype.query.filter(and_(models.Phenotype.project_id==project_id,models.Phenotype.name==p.name)).all()
+		temp= models.Phenotype.query.\
+				filter(and_(models.Phenotype.project_id==project_id,\
+				models.Phenotype.name==p.name)).all()
 		for row in temp:
 			if 'ALL' in selected_phens:
 				try:
@@ -828,7 +844,9 @@ def download_ped(project_id, filename):
 				except KeyError:
 					phen_list[row.individual_id] = [row.value]
 
-	ind = models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).all()
+	ind = models.Individual.query.\
+			filter_by(project_id=project_id).\
+			order_by(models.Individual.new_id.asc()).all()
 		
 	for row in ind:
 		ordered_ind.append(row.new_id)
@@ -843,7 +861,9 @@ def download_ped(project_id, filename):
 			gens_list[row.snp] = [row.snp]
 
 	for i in gens_list:
-		current_gen = models.Genotype.query.filter_by(project_id=project_id).order_by().filter(models.Genotype.snp == i).all()
+		current_gen = models.Genotype.query.\
+				filter_by(project_id=project_id).order_by().\
+				filter(models.Genotype.snp == i).all()
 		for row in current_gen:
 			final_out[row.individual_id] += [row.call]
 	
@@ -860,7 +880,6 @@ def download_ped(project_id, filename):
 			final_line.append([i.new_id])
 	
 		for column in range(0,len(gens_list)):
-			print "LOLE"
 			A = False
 			C = False
 			G = False
@@ -975,12 +994,12 @@ def download_ped(project_id, filename):
 									zeros.append('0')
 
 							if group_list == []:
-								writer.writerow([int(row.split('_')[-2])]+ [base_str+'2']+['0']+['0'] +['0'] + zeros)
+								writer.writerow([int(row.split('_')[-2])] + \
+										[base_str+'2']+['0']+['0'] +['0'] + zeros)
 							else:
 								if row in group_list:
-									writer.writerow([int(row.split('_')[-2])]+ [base_str+'2']+['0']+['0'] +['0'] + zeros)
-						elif tiny_stack[1] == base_str+'2':
-							print "do nothing"
+									writer.writerow([int(row.split('_')[-2])] + \
+											[base_str+'2']+['0']+['0'] +['0'] + zeros)
 						else:
 							if phen_list != {}:
 								for x in range(0,len(gens_list)+len(phen_list.values()[0])+2):
@@ -990,12 +1009,16 @@ def download_ped(project_id, filename):
 									zeros.append('0')
 
 							if group_list == []:
-								writer.writerow([int(row.split('_')[-2])]+ [base_str+'1']+['0']+['0'] +['0']+ zeros)
-								writer.writerow([int(row.split('_')[-2])]+ [base_str+'2']+['0']+['0'] +['0']+ zeros)
+								writer.writerow([int(row.split('_')[-2])] + \
+										[base_str+'1']+['0']+['0'] +['0']+ zeros)
+								writer.writerow([int(row.split('_')[-2])] + \
+										[base_str+'2']+['0']+['0'] +['0']+ zeros)
 							else:
 								if row in group_list:
-									writer.writerow([int(row.split('_')[-2])]+ [base_str+'1']+['0']+['0'] +['0']+ zeros)
-									writer.writerow([int(row.split('_')[-2])]+ [base_str+'2']+['0']+['0'] +['0']+ zeros)
+									writer.writerow([int(row.split('_')[-2])] + \
+											[base_str+'1']+['0']+['0'] +['0']+ zeros)
+									writer.writerow([int(row.split('_')[-2])] + \
+											[base_str+'2']+['0']+['0'] +['0']+ zeros)
 
 					elif row[-1] == '2' and tiny_stack[1] != base_str+'1':
 							if phen_list != {}:
@@ -1005,10 +1028,12 @@ def download_ped(project_id, filename):
 								for x in range(0,len(gens_list)+2):
 									zeros.append('0')
 							if group_list == []:
-								writer.writerow([int(row.split('_')[-2])]+[base_str+'1']+['0']+['0'] +['0']+ zeros)
+								writer.writerow([int(row.split('_')[-2])]+[base_str+'1']+\
+										['0']+['0'] +['0']+ zeros)
 							else:
 								if row in group_list:
-									writer.writerow([int(row.split('_')[-2])]+[base_str+'1']+['0']+['0'] +['0']+ zeros)
+									writer.writerow([int(row.split('_')[-2])]+[base_str+'1']+\
+											['0']+['0'] +['0']+ zeros)
 
 				
 					c = []
@@ -1025,11 +1050,14 @@ def download_ped(project_id, filename):
 
 					if phen_list != {}:
 						try:
-							z = [] + [int(row.split('_')[-2])] + [row] + [par_1] + [par_2] + [genders[row]] + c + phen_list[row]
+							z = [] + [int(row.split('_')[-2])] + [row] + \
+									[par_1] + [par_2] + [genders[row]] + c + phen_list[row]
 						except KeyError, e:
-							z = [] + [int(row.split('_')[-2])] + [row] + [par_1] + [par_2] + [genders[row]]  + c
+							z = [] + [int(row.split('_')[-2])] + [row] + \
+									[par_1] + [par_2] + [genders[row]]  + c
 					else:
-						z = [] + [int(row.split('_')[-2])] + [row] + [par_1] + [par_2] + [genders[row]]  + c
+						z = [] + [int(row.split('_')[-2])] + [row] + \
+								[par_1] + [par_2] + [genders[row]]  + c
 
 
 					if group_list == []:
@@ -1053,7 +1081,8 @@ def gen_ped(project_id):
 	gens_list = {}
 	ordered_ind = []
 
-	ind = models.Individual.query.filter_by(project_id=project_id).order_by(models.Individual.new_id.asc()).all()
+	ind = models.Individual.query.filter_by(project_id=project_id).\
+			order_by(models.Individual.new_id.asc()).all()
 	for row in ind:
 		ordered_ind.append(row.new_id)
 		final_out[row.new_id] = []
@@ -1063,7 +1092,8 @@ def gen_ped(project_id):
 		gens_list[row.snp] = [row.snp]
 
 	for i in gens_list:
-		current_gen = models.Genotype.query.filter_by(project_id=project_id).order_by().filter(models.Genotype.snp == i).all()
+		current_gen = models.Genotype.query.filter_by(project_id=project_id).\
+				order_by().filter(models.Genotype.snp == i).all()
 		for row in current_gen:
 			final_out[row.individual_id] += [row.call]
 	
@@ -1235,7 +1265,8 @@ def gen_map(project_id):
 @login_required
 def download_dat(filename,project_id):
 	geno = models.Genotype.query.filter_by(project_id=project_id).all()
-	pheno = db.engine.execute('SELECT name FROM phenotype where project_id='+ str(project_id) +' group by name;')
+	pheno = db.engine.execute('SELECT name FROM phenotype where project_id=' + \
+			str(project_id) +' group by name;')
 	gen_list = {}
 	phn_list = {}
 
@@ -1269,7 +1300,8 @@ def log_page(page=1):
 		log = None
 	import datetime
 	for row in log.items:
-		row.timestamp = datetime.datetime.fromtimestamp(int(row.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+		row.timestamp = datetime.datetime.fromtimestamp(int(row.timestamp)).\
+				strftime('%Y-%m-%d %H:%M:%S')
 	return render_template('log.html', title="Logs",rows=log)
 
 @gen_app.route('/help')
