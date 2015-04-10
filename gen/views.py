@@ -151,10 +151,10 @@ def project_page(id):
 	result = ""
 	hardyBtn = HardyButton()
 	if hardyBtn.validate_on_submit():
-		from subprocess import check_output, CalledProcessError
+		import subprocess
 		try:
-			# TODO: plink location variable
-			result = check_output(["/cs/home/vt3/SHproject/plink", "--help"])  
+			# hardcoded for now to illustrate how plink works
+			result = subprocess.Popen("/cs/home/vt3/SHproject/plink --noweb --map wgas1.map --ped wgas1.ped", shell=True, stdout=subprocess.PIPE).stdout.read()
 			result = result.split('\n')
 		except CalledProcessError, e:
 			print e
@@ -679,21 +679,25 @@ def single_geno():
 			filter_by(project_id=request.form['id']).all()
 	current_geno = set()
 	duplicate = set()
+
 	for row in current_geno_q:
 		current_geno.add(row.snp)
 
+	# Upload file and parse it
 	if request.method == 'POST':
-
 		single_geno = request.files['single_geno']
-
+		
+		# Check if this is the correct file type
 		if single_geno and allowed_file(single_geno.filename):
 			filename = secure_filename(single_geno.filename)
 			single_geno.save(os.path.join(gen_app.config['UPLOAD_FOLDER'], filename))
 			flash("Genotype file uploaded successfully", "success")
-
+	
 			try:
 				with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'rb') as csvfile:
 					header=csvfile.readline()
+
+					# Determine delimiter
 					dell = ","
 					if header.find(" ") !=- 1:
 						dell = " "
@@ -709,7 +713,7 @@ def single_geno():
 					for row in sr:
 						future.append(row[0])
 
-					
+					# Perform checks
 					csvfile.seek(0)
 					for row in sr:
 						num_rows = num_rows+1
@@ -787,9 +791,11 @@ def single_geno():
 @gen_app.route('/download_ped/<int:project_id>/<path:filename>', methods=['POST'])
 @login_required
 def download_ped(project_id, filename):
-	"""Generate and serve a PED file upon request.
-	Magic pretty much...
+	"""Generate and serve a PED
+	file upon request.
 	"""
+
+	# Get information for selected filters
 	selected_phens = request.form.getlist('phen')
 	selected_gens = request.form.getlist('gen')
 
@@ -803,10 +809,7 @@ def download_ped(project_id, filename):
 	if len(selected_phens) == 0:
 		selected_phens = ["ALL"]
 
-
-
-	
-
+	# Check if individuals are present
 	if models.Individual.query.filter_by(project_id=project_id).\
 			order_by(models.Individual.new_id.asc()).count() ==0:
 		flash("No individuals", "danger")
@@ -819,13 +822,14 @@ def download_ped(project_id, filename):
 	group_list = []
 	genders = {}
 
-
+	# Get group information
 	grp = request.form['group']
 
 	if grp != "ALL":
 		group = models.Group.query.filter_by(group_id=grp).all()
 		group_list = group[0].indiv_list.split(",")
-
+	
+	# Retrieve selected phenotypes
 	phens = db.engine.execute('SELECT * FROM phenotype where project_id='\
 			+ str(project_id) +' group by name;')
 	for p in phens:
@@ -843,7 +847,8 @@ def download_ped(project_id, filename):
 					phen_list[row.individual_id].append(row.value)
 				except KeyError:
 					phen_list[row.individual_id] = [row.value]
-
+	
+	# Retrieve idividuals
 	ind = models.Individual.query.\
 			filter_by(project_id=project_id).\
 			order_by(models.Individual.new_id.asc()).all()
@@ -853,6 +858,7 @@ def download_ped(project_id, filename):
 		final_out[row.new_id] = []
 		genders[row.new_id] = row.gender
 	
+	# Retrieve selected genotypes
 	gens = models.Genotype.query.filter_by(project_id=project_id).all()
 	for row in gens:
 		if 'ALL' in selected_gens:
@@ -872,13 +878,14 @@ def download_ped(project_id, filename):
 		if final_out[row] != []:
 			new_final_out[row] = final_out[row]
 	
-
+	# Start filling in file
 	with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'w+') as f:
 		writer = csv.writer(f, delimiter=' ')
 		final_line = []
 		for i in ind:
 			final_line.append([i.new_id])
 	
+		# Determine dominant allele
 		for column in range(0,len(gens_list)):
 			A = False
 			C = False
@@ -904,7 +911,8 @@ def download_ped(project_id, filename):
 					flash("Possible difference in genotype/phenotype count.", "danger")
 					return redirect(url_for('project_page', id=project_id))
 
-			lol = 0
+
+			# Convert alleles to binary form
 			for row in new_final_out:
 				if new_final_out[row] != []:
 					fr = ""
@@ -960,15 +968,12 @@ def download_ped(project_id, filename):
 					if new_final_out[row][column] == "X/X":
 						fr = sn = "X"
 					new_final_out[row][column] = fr+','+sn
-					lol += 1
 
 
 		# a stack used to keep track of previously encountered IDs
 		tiny_stack = ['0','0','0']
 
 		for row in ordered_ind:
-			#TODO That's dirty: you are expecting to catch
-			# an exception in the if in order to skip a missing entry. FIX IT!1!!!11	
 			try:
 				if new_final_out[row] != []:
 
@@ -983,7 +988,7 @@ def download_ped(project_id, filename):
 					zeros = []
 
 					# check if child or parent
-
+					# and insert parents
 					if row[-1] == '3':
 						if tiny_stack[1] == base_str+'1':
 							if phen_list != {}:
@@ -1034,12 +1039,9 @@ def download_ped(project_id, filename):
 								if row in group_list:
 									writer.writerow([int(row.split('_')[-2])]+[base_str+'1']+\
 											['0']+['0'] +['0']+ zeros)
-
 				
 					c = []
-
 					for column in range(len(gens_list)):
-
 						c += new_final_out[row][column].split(',')
 
 					par_1 = 0
@@ -1047,7 +1049,9 @@ def download_ped(project_id, filename):
 					if int(row[-1]) > 2:
 						par_1 = base_str+'1'
 						par_2 = base_str+'2'
-
+					
+					# Write final lines
+					# Account for missing phenotypes
 					if phen_list != {}:
 						try:
 							z = [] + [int(row.split('_')[-2])] + [row] + \
@@ -1058,8 +1062,8 @@ def download_ped(project_id, filename):
 					else:
 						z = [] + [int(row.split('_')[-2])] + [row] + \
 								[par_1] + [par_2] + [genders[row]]  + c
-
-
+					
+					# Account for group filter
 					if group_list == []:
 						writer.writerow(z)
 					else:
@@ -1067,179 +1071,15 @@ def download_ped(project_id, filename):
 							writer.writerow(z)
 
 			except KeyError, e:
+				print str(e)
 
-				tmeptemptemp = 1+1
-		#print final_out
-		#row = [] + [str(row.individual_id)] + [str(row.new_id)] + [fr] + [sn]
-		#writer.writerow(row)
-	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename=filename)
-
-def gen_ped(project_id):
-	filename = "random"
-
-	final_out = {}
-	gens_list = {}
-	ordered_ind = []
-
-	ind = models.Individual.query.filter_by(project_id=project_id).\
-			order_by(models.Individual.new_id.asc()).all()
-	for row in ind:
-		ordered_ind.append(row.new_id)
-		final_out[row.new_id] = []
-	
-	gens = models.Genotype.query.all()
-	for row in gens:
-		gens_list[row.snp] = [row.snp]
-
-	for i in gens_list:
-		current_gen = models.Genotype.query.filter_by(project_id=project_id).\
-				order_by().filter(models.Genotype.snp == i).all()
-		for row in current_gen:
-			final_out[row.individual_id] += [row.call]
-	
-	new_final_out = {}
-	for row in final_out:
-		if final_out[row] != []:
-			new_final_out[row] = final_out[row]
-	
-
-	with open(gen_app.config['UPLOAD_FOLDER'] + filename, 'w+') as f:
-		writer = csv.writer(f, delimiter=',')
-		final_line = []
-		for i in ind:
-			final_line.append([i.new_id])
-
-		for column in range(len(gens_list)):
-			A = False
-			C = False
-			G = False
-			T = False
-			X = False
-
-			for row in new_final_out:
-				if new_final_out[row] != []:
-					spl = new_final_out[row][column].split("/")
-					if spl[0] == "A" or spl[1] == "A":
-						A = True
-					if spl[0] == "C" or spl[1] == "C":
-						C = True
-					if spl[0] == "G" or spl[1] == "G":
-						G = True
-					if spl[0] == "T" or spl[1] == "T":
-						T = True
-					#elif spl[0] == "X" or spl[2] == "X":
-					#	X = True
-
-			lol = 0
-			for row in new_final_out:
-				if new_final_out[row] != []:
-					fr = ""
-					sn = ""
-					if A and G:
-						if new_final_out[row][column] == "A/G":
-							fr = "1"
-							sn = "2"
-						elif new_final_out[row][column] == "A/A":
-							fr = sn = "1"
-						elif new_final_out[row][column] == "G/G":
-							fr = sn = "2"
-					elif A and C:
-						if new_final_out[row][column] == "A/C":
-							fr = "1"
-							sn = "2"
-						elif new_final_out[row][column] == "A/A":
-							fr = sn = "1"
-						elif new_final_out[row][column] == "C/C":
-							fr = sn = "2"
-					elif A and T:
-						if new_final_out[row][column] == "A/T":
-							fr = "1"
-							sn = "2"
-						elif new_final_out[row][column] == "A/A":
-							fr = sn = "1"
-						elif new_final_out[row][column] == "T/T":
-							fr = n = "2"
-					elif C and G:
-						if new_final_out[row][column] == "C/G":
-							fr = "1"
-							sn = "2"
-						elif new_final_out[row][column] == "C/C":
-							fr = sn = "1"
-						elif new_final_out[row][column] == "G/G":
-							fr = sn = "2"
-					elif C and T:
-						if new_final_out[row][column] == "C/T":
-							fr = "1"
-							sn = "2"
-						elif new_final_out[row][column] == "C/C":
-							fr = sn = "1"
-						elif new_final_out[row][column] == "T/T":
-							fr = sn = "2"
-					elif G and T:
-						if new_final_out[row][column] == "G/T":
-							fr = "1"
-							sn = "2"
-						elif new_final_out[row][column] == "G/G":
-							fr = sn = "1"
-						elif new_final_out[row][column] == "T/T":
-							fr = sn = "2"
-					elif X:
-						fr = sn = "X"
-					new_final_out[row][column] = fr+','+sn
-					lol += 1
-
-
-		# a stack used to keep track of previously encountered IDs
-		tiny_stack = ['0','0','0']
-
-		for row in ordered_ind:
-			#TODO That's dirty: you are expecting to catch
-			# an exception in the if in order to skip a missing entry. FIX IT!1!!!11	
-			try:
-				if new_final_out[row] != []:
-
-					# shift down the stack
-					tiny_stack[0] = tiny_stack[1]
-					tiny_stack[1] = tiny_stack[2]
-					tiny_stack[2] = row
-
-					# base of the ID
-					base_str = row[:-1]
-
-					# check if child or parent
-					if row[-1] == '3':
-						if tiny_stack[1] == base_str+'1':
-							writer.writerow([int(row.split('_')[2])]+ [base_str+'2']+['0']+['0'])
-						elif tiny_stack[1] == base_str+'2':
-							print "do nothing"
-						else:
-							writer.writerow([int(row.split('_')[2])]+ [base_str+'1']+['0']+['0'])
-							writer.writerow([int(row.split('_')[2])]+ [base_str+'2']+['0']+['0'])
-					elif row[-1] == '2' and tiny_stack[1] != base_str+'1':
-							writer.writerow([int(row.split('_')[2])]+[base_str+'1']+['0']+['0'])
-				
-					c = []
-
-					for column in range(len(gens_list)):
-						c += new_final_out[row][column].split(',')
-
-					par_1 = 0
-					par_2 = 0
-					if int(row[-1]) > 2:
-						par_1 = base_str+'1'
-						par_2 = base_str+'2'
-
-					z = [] + [int(row.split('_')[2])] + [row] + [par_1] + [par_2] + c
-					writer.writerow(z)
-
-			except KeyError, e:
-				tmeptemptemp = 1+1
-		#print final_out
-		#row = [] + [str(row.individual_id)] + [str(row.new_id)] + [fr] + [sn]
-		#writer.writerow(row)
-	return filename
+	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], \
+			filename=filename)
 
 def gen_map(project_id):
+	"""Generate and serve a map file.
+	DEPRECATED
+	"""
 	filename = "random2"
 	from sqlalchemy import distinct
 	geno = models.Genotype.query.filter_by(project_id=project_id).all()
@@ -1264,6 +1104,9 @@ def gen_map(project_id):
 @gen_app.route('/download_dat/<int:project_id>/<path:filename>', methods=['GET'])
 @login_required
 def download_dat(filename,project_id):
+	"""Generate and serve
+	the DAT file
+	"""
 	geno = models.Genotype.query.filter_by(project_id=project_id).all()
 	pheno = db.engine.execute('SELECT name FROM phenotype where project_id=' + \
 			str(project_id) +' group by name;')
@@ -1284,6 +1127,18 @@ def download_dat(filename,project_id):
 		for row in phn_list:
 			r = [] + ["T"] + [phn_list[row]]
 			writer.writerow(r)
+	
+	"""
+	Create log entry
+	"""
+	log_entry = models.Log()
+	import time
+	log_entry.timestamp = int(time.time())
+	log_entry.user_id = g.user.user_name
+	log_entry.action = "Downloaded DAT file."
+	db.session.add(log_entry)
+	db.session.commit()
+
 
 	return send_from_directory(gen_app.config['UPLOAD_FOLDER'], filename=filename)
 
@@ -1293,11 +1148,22 @@ def download_dat(filename,project_id):
 @gen_app.route('/log/page/<int:page>')
 @login_required
 def log_page(page=1):
+	"""Show the system logs starting
+	from the latest entrie.
+	"""
+
+	# Check if this is the master administrator
+	if g.user.user_name != gen_app.config['ADMIN_USER']:
+		flash("You should not be here", "danger")
+		return redirect(url_for('index'))
+
 	try:
 		log = models.Log.query.order_by(models.Log.timestamp.desc()).paginate(page, per_page=15)
 	except exc.OperationalError:
 		flash("No logs found", "info")
 		log = None
+	
+	# Convert from epoch to human readable
 	import datetime
 	for row in log.items:
 		row.timestamp = datetime.datetime.fromtimestamp(int(row.timestamp)).\
@@ -1307,12 +1173,19 @@ def log_page(page=1):
 @gen_app.route('/help')
 @login_required
 def help():
-
+	"""Display the documentation 
+	and help sections
+	"""
 	return render_template('help.html', title="Help")
 
 @gen_app.route('/users')
 @login_required
 def users():
+	"""List all registered users to the
+	master administrator.
+	"""
+
+	# Check if this is the master administrator
 	if g.user.user_name != gen_app.config['ADMIN_USER']:
 		flash("You should not be here", "danger")
 		return redirect(url_for('index'))
@@ -1328,6 +1201,11 @@ def users():
 @gen_app.route('/add_user', methods=['POST'])
 @login_required
 def add_user():
+	"""Add a new user to the system.
+	Only the master administrator can do that.
+	"""
+
+	# Check if this is the master administrator
 	if g.user.user_name != gen_app.config['ADMIN_USER']:
 		flash("You should not be here", "danger")
 		return redirect(url_for('index'))
@@ -1340,6 +1218,18 @@ def add_user():
 		user.email = request.form['email']
 		db.session.add(user)
 		db.session.commit()
+		
+		"""
+		Create log entry
+		"""
+		log_entry = models.Log()
+		import time
+		log_entry.timestamp = int(time.time())
+		log_entry.user_id = g.user.user_name
+		log_entry.action = "Created user " + request.form['username']
+		db.session.add(log_entry)
+		db.session.commit()
+
 
 	return redirect(url_for('users'))
 
