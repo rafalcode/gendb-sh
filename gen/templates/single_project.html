@@ -324,8 +324,39 @@
 				<!--				<a class="btn btn-success disabled" href=""><i class="fa fa-download"></i> DAT file</a>-->
 			</div>
 		</div>
+<div class="panel panel-danger">
+  <div class="panel-heading">
+    <h3 class="panel-title">Delete Data</h3>
+  </div>
+  <div class="panel-body">
+    <form role="form" action="{{url_for('delete_data', project_id=rows.project_id)}}" method=post>
+                <div class="form-group">
+                    <label for="dataId">Select Phenotypes</label>
+								<select class="form-control" id="phenDel" name="phenDel" size=4 multiple>
+									<option value="NONE">NONE</option>
+									{% for phen in phen_list %}
+									<option value="{{phen}}">{{phen}}</option>
+									{% endfor %}
+								</select>
+
+                </div>
+                <div class="form-group">
+                    <label for="dataId">Select genotypes</label>
+								<select class="form-control" id="genDel" name="genDel" size=4 multiple>
+									<option value="NONE">NONE</option>
+									{% for gen in gen_list %}
+									<option value="{{gen}}">{{gen}}</option>
+									{% endfor %}
+								</select>
+
+                </div>
+
+                <button type="submit" class="btn btn-danger"><i class="fa fa-trash"></i> Delete</button>
+            </form>     
+  </div>
+</div>
 		</div>
-		<div class="col-md-12">
+<!--		<div class="col-md-12">
 		
 <h1>QC Test</h1>
 <hr>
@@ -349,7 +380,7 @@
 	
 	
 	{% endif %}
-		</div>
+		</div>-->
 	</div>
 </div>
 {% endblock %}
