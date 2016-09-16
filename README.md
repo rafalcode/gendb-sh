@@ -1,3 +1,5 @@
+### Forked from Valentin Tunev's git hub repo
+
 ### SETUP
 
 ####Requirements:
@@ -11,9 +13,11 @@ pip install flask-wtf==0.10.2
 pip install pymysql==0.6.2
 pip install wtforms==2.0.1
 ```
-
+Original instructions:
 1. Setup database using the provided SQL file.
 2. Manually add the admin user in the database (password needs to be sha512 hash)
 3. Enter the needed values in config.py
 4. run 'python run'
 5. Navigate to the URL of your server and login
+
+Ref. No. 3, such a file doesn't exist.
