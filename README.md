@@ -23,7 +23,7 @@ Original instructions:
 Ref. No. 3, such a file doesn't exist.
 
 ### arch.tar.gz
-This is an awkwardly packaged (mistakenly - one presumes - recursived compressed) set of flask,celery and sqlalchemy
+This is an awkwardly packaged (mistakenly - one presumes - recursivelyi compressed) set of flask and sqlalchemy
 core libraries which are not part of the gendb package. These can be installed with the usual virtualenv procedure.
 So, therefore, this fork will leave them out. There is also flask subdirectory which pretty much has nothings
 and that vitualenv should take of.
@@ -36,5 +36,5 @@ http://exploreflask.com/en/latest/configuration.html
 
 ### engine for MySQL
 usually this is done with create_engine() but only engine.execute seems to be "going on"
-example for creat engine
+example for create engine
 engine = create_engine('mysql://scott:tiger@localhost/foo')
