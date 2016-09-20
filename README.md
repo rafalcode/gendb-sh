@@ -38,3 +38,8 @@ http://exploreflask.com/en/latest/configuration.html
 usually this is done with create_engine() but only engine.execute seems to be "going on"
 example for create engine
 engine = create_engine('mysql://scott:tiger@localhost/foo')
+
+### using the code
+For a demo it's probably best to copy this directroy into a web-visitable directory, and
+inside that, create the uploads directory and appropriately edit the config.py file
+
