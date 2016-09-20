@@ -33,3 +33,8 @@ config's:
 http://stackoverflow.com/questions/5025720/how-do-you-set-up-a-flask-application-with-sqlalchemy-for-testing
 the config-py approach seems to be described here:
 http://exploreflask.com/en/latest/configuration.html
+
+### engine for MySQL
+usually this is done with create_engine() but only engine.execute seems to be "going on"
+example for creat engine
+engine = create_engine('mysql://scott:tiger@localhost/foo')
